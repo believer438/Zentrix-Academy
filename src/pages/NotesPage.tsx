@@ -8,7 +8,7 @@ export default function NotesPage() {
         <div className="border-b border-slate-200 p-4 dark:border-slate-800">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mes Notes</h2>
-            <button className="rounded-lg bg-blue-600 p-2 text-white">
+            <button className="rounded-lg bg-[#FF6B00] p-2 text-white">
               <Plus className="h-4 w-4" />
             </button>
           </div>

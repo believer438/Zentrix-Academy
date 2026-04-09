@@ -230,7 +230,7 @@ export default function Home() {
             <Mail className="w-3 h-3" /> info@zati.africa
           </a>
           <a href="tel:+256414673086" className="flex items-center gap-1.5 hover:text-[#FF6B00] transition-colors duration-300">
-            <Phone className="w-3 h-3" /> +256 414 673 086
+            <Phone className="w-3 h-3" /> +243 999371251
           </a>
         </div>
         <div className="flex items-center gap-3">
@@ -837,7 +837,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-center gap-3 text-xs">
                   <Phone className="w-4 h-4 text-[#FF6B00] shrink-0" />
-                  <a href="tel:+256414673086" className="text-slate-500 hover:text-white transition-colors">+256 414 673 086</a>
+                  <a href="tel:+256414673086" className="text-slate-500 hover:text-white transition-colors">+243 999371251</a>
                 </li>
                 <li className="flex items-center gap-3 text-xs">
                   <Mail className="w-4 h-4 text-[#FF6B00] shrink-0" />

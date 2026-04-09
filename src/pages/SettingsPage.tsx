@@ -62,7 +62,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <button className="w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white opacity-70">Sauvegarder</button>
+      <button className="w-full rounded-xl bg-[#FF6B00] py-3 text-sm font-medium text-white opacity-70">Sauvegarder</button>
     </div>
   );
 }

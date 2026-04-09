@@ -78,13 +78,13 @@ export default function DocumentAIPage() {
                 value={documentTitle}
                 onChange={(e) => setDocumentTitle(e.target.value)}
                 placeholder="Ex: Analyse mathematique"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#FF6B00] dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               />
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Fichier</label>
-              <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500 transition-colors hover:border-blue-400 hover:bg-blue-50/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:bg-blue-950/20">
+              <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500 transition-colors hover:border-[#FF6B00] hover:bg-orange-50/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-[#FF6B00] dark:hover:bg-orange-950/20">
                 <FileUp className="h-5 w-5" />
                 <span className="text-center">{selectedFile ? selectedFile.name : "Choisir un fichier PDF, DOCX ou TXT"}</span>
                 <input
@@ -128,7 +128,7 @@ export default function DocumentAIPage() {
 
             <button
               onClick={handleLaunch}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               {runState === "loading" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               Lancer l'analyse
@@ -138,7 +138,7 @@ export default function DocumentAIPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">
               <div className="mb-4 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
+                <FileText className="h-5 w-5 text-[#FF6B00]" />
                 <h2 className="font-semibold text-slate-900 dark:text-white">Explication du document</h2>
               </div>
 

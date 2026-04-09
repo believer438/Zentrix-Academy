@@ -26,7 +26,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-[#FF6B00] dark:bg-orange-950/40 dark:text-orange-300">
               <BarChart3 className="h-5 w-5" />
             </div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
           <div className="mb-5 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-500" />
+            <BarChart3 className="h-5 w-5 text-[#FF6B00]" />
             <h2 className="font-semibold text-slate-900 dark:text-white">Heures par mois</h2>
           </div>
           <div className="flex h-56 items-end gap-3">

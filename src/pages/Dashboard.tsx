@@ -16,15 +16,18 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildApiUrl } from "@/lib/env";
+import {
+  FadeUp,
+  RevealLine,
+  ScaleIn,
+  SlideInLeft,
+  SlideInRight,
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/animations/ViewportTransitions";
 
 interface DashboardProps {
   onNavigate: (page: string, data?: unknown) => void;
@@ -138,24 +141,6 @@ const news = [
   },
 ];
 
-const faq = [
-  {
-    id: "faq-1",
-    question: "Ou retrouver la plateforme actuelle de cours ?",
-    answer: "La section Cours conserve votre application actuelle. L'accueil sert d'entree vitrine et les parcours restent accessibles dans la navigation.",
-  },
-  {
-    id: "faq-2",
-    question: "L'assistant IA est-il toujours disponible ?",
-    answer: "Oui. Vous pouvez toujours ouvrir l'assistant IA depuis la navigation haute ou le bouton flottant mobile.",
-  },
-  {
-    id: "faq-3",
-    question: "Puis-je utiliser l'accueil comme page principale ?",
-    answer: "Oui. Cet accueil est maintenant la premiere experience, tandis que les pages internes gardent votre logique actuelle.",
-  },
-];
-
 const popularTags = [
   "IntelligenceArtificielle",
   "ScienceDesDonnees",
@@ -176,18 +161,82 @@ function normalizeCourse(raw: any, index: number): ExploreCourse {
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [previousSlide, setPreviousSlide] = useState<number | null>(null);
+  const [isSlideTransitioning, setIsSlideTransitioning] = useState(false);
+  const [heroAnimationReady, setHeroAnimationReady] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const [exploreQuery, setExploreQuery] = useState("");
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreResults, setExploreResults] = useState<ExploreCourse[]>([]);
   const [exploreError, setExploreError] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const heroTimeoutRef = useRef<number | null>(null);
+  const heroRafRef = useRef<number | null>(null);
+  const activeSlideRef = useRef(0);
+  const isSlideTransitioningRef = useRef(false);
+  const HERO_TRANSITION_MS = 900;
+  const HERO_AUTOPLAY_MS = 8000;
+  const HERO_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+  const changeSlide = (next: number) => {
+    const current = activeSlideRef.current;
+    if (next === current || isSlideTransitioningRef.current) return;
+
+    if (heroTimeoutRef.current) window.clearTimeout(heroTimeoutRef.current);
+    if (heroRafRef.current) window.cancelAnimationFrame(heroRafRef.current);
+
+    setPreviousSlide(current);
+    setActiveSlide(next);
+    setIsSlideTransitioning(true);
+    activeSlideRef.current = next;
+    isSlideTransitioningRef.current = true;
+    setHeroAnimationReady(false);
+
+    heroRafRef.current = window.requestAnimationFrame(() => {
+      heroRafRef.current = window.requestAnimationFrame(() => {
+        setHeroAnimationReady(true);
+      });
+    });
+
+    heroTimeoutRef.current = window.setTimeout(() => {
+      setIsSlideTransitioning(false);
+      setPreviousSlide(null);
+      setHeroAnimationReady(false);
+      isSlideTransitioningRef.current = false;
+    }, HERO_TRANSITION_MS);
+  };
+
+  useEffect(() => {
+    activeSlideRef.current = activeSlide;
+  }, [activeSlide]);
+
+  useEffect(() => {
+    isSlideTransitioningRef.current = isSlideTransitioning;
+  }, [isSlideTransitioning]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
+      const next = (activeSlideRef.current + 1) % heroSlides.length;
+      changeSlide(next);
+    }, HERO_AUTOPLAY_MS);
 
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrollY(window.scrollY || 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (heroTimeoutRef.current) window.clearTimeout(heroTimeoutRef.current);
+      if (heroRafRef.current) window.cancelAnimationFrame(heroRafRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -254,19 +303,56 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     }
   };
 
+  const heroParallaxY = Math.min(scrollY * 0.3, 180);
+  const heroContentOpacity = Math.max(0, 1 - scrollY / 500);
+  const currentHeroSlide = heroSlides[activeSlide];
+  const previousHeroSlide = previousSlide !== null ? heroSlides[previousSlide] : null;
+  const sequenceStyle = (delayMs: number): CSSProperties => {
+    if (!isSlideTransitioning) return { opacity: 1, transform: "translate3d(0,0,0)" };
+    if (!heroAnimationReady) return { opacity: 0, transform: "translate3d(0,24px,0)" };
+    return {
+      opacity: 1,
+      transform: "translate3d(0,0,0)",
+      transition: `opacity 700ms ${HERO_EASE} ${delayMs}ms, transform 700ms ${HERO_EASE} ${delayMs}ms`,
+    };
+  };
+
   return (
     <div className="min-h-full bg-white dark:bg-[#0b0d14]">
       <section className="relative min-h-[78vh] overflow-hidden bg-[#0f0f1a] text-white">
-        {heroSlides.map((slide, index) => (
+        <div className="absolute inset-0 overflow-hidden" style={{ transform: `translate3d(0, ${heroParallaxY}px, 0)` }}>
+          {isSlideTransitioning && previousHeroSlide && (
+            <div
+              className="absolute inset-0"
+              style={{
+                opacity: heroAnimationReady ? 0 : 1,
+                transform: heroAnimationReady
+                  ? "translate3d(0,-22px,0) scale(1.04)"
+                  : "translate3d(0,0,0) scale(1)",
+                transition: `opacity ${HERO_TRANSITION_MS}ms ${HERO_EASE}, transform ${HERO_TRANSITION_MS}ms ${HERO_EASE}`,
+                willChange: "opacity, transform",
+              }}
+            >
+              <img src={previousHeroSlide.image} alt={previousHeroSlide.title} className="h-full w-full object-cover" />
+            </div>
+          )}
+
           <div
-            key={slide.image}
-            className={`absolute inset-0 transition-opacity duration-700 ${
-              index === activeSlide ? "opacity-100" : "opacity-0"
-            }`}
+            className="absolute inset-0"
+            style={{
+              opacity: isSlideTransitioning ? (heroAnimationReady ? 1 : 0) : 1,
+              transform: isSlideTransitioning
+                ? heroAnimationReady
+                  ? "translate3d(0,0,0) scale(1)"
+                  : "translate3d(0,36px,0) scale(1.06)"
+                : "translate3d(0,0,0) scale(1)",
+              transition: `opacity ${HERO_TRANSITION_MS}ms ${HERO_EASE}, transform ${HERO_TRANSITION_MS}ms ${HERO_EASE}`,
+              willChange: "opacity, transform",
+            }}
           >
-            <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+            <img src={currentHeroSlide.image} alt={currentHeroSlide.title} className="h-full w-full object-cover" />
           </div>
-        ))}
+        </div>
         <div className="absolute inset-0 bg-[#070b14]/80" />
         <div
           className="absolute inset-0 opacity-20"
@@ -280,56 +366,78 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="absolute left-0 top-0 h-1 w-52 bg-[#FF6B00]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,0,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.18),transparent_30%)]" />
 
-        <div className="relative mx-auto flex min-h-[78vh] max-w-7xl items-center px-4 py-14 sm:px-8 lg:py-16">
+        <div
+          className="relative mx-auto flex min-h-[78vh] max-w-7xl items-center px-4 py-14 sm:px-8 lg:py-16"
+          style={{ opacity: heroContentOpacity }}
+        >
           <div className="w-full max-w-5xl">
             <div className="relative min-h-[500px] sm:min-h-[470px] lg:min-h-[450px]">
-              {heroSlides.map((slide, index) => (
+              {isSlideTransitioning && previousHeroSlide && (
                 <div
-                  key={slide.tag}
-                  className={`absolute inset-0 transition-all duration-700 ease-out ${
-                    index === activeSlide
-                      ? "translate-y-0 opacity-100"
-                      : "pointer-events-none translate-y-3 opacity-0"
-                  }`}
+                  className="absolute inset-0 z-[1]"
+                  style={{
+                    opacity: heroAnimationReady ? 0 : 1,
+                    transform: heroAnimationReady ? "translate3d(0,-20px,0)" : "translate3d(0,0,0)",
+                    transition: `opacity 520ms ${HERO_EASE}, transform 520ms ${HERO_EASE}`,
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-px w-10 bg-[#FF6B00]" />
                     <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
-                      {slide.tag}
+                      {previousHeroSlide.tag}
                     </span>
                   </div>
 
                   <h1 className="mt-8 max-w-[20ch] text-[2.6rem] font-black leading-[1.08] tracking-tight sm:text-[3.35rem] lg:text-[4rem]">
-                    {slide.title}
+                    {previousHeroSlide.title}
                   </h1>
                   <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-                    {slide.subtitle}
+                    {previousHeroSlide.subtitle}
                   </p>
-
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <button
-                      onClick={() => onNavigate("courses")}
-                      className="inline-flex items-center justify-center gap-2 bg-[#FF6B00] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-[#e56000]"
-                    >
-                      Ouvrir les cours
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onNavigate("document-ai")}
-                      className="inline-flex items-center justify-center gap-2 border border-white/20 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
-                    >
-                      Document IA
-                    </button>
-                  </div>
                 </div>
-              ))}
+              )}
+
+              <div className="absolute inset-0 z-[2]">
+                <div className="flex items-center gap-3" style={sequenceStyle(120)}>
+                  <div className="h-px w-10 bg-[#FF6B00]" />
+                  <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
+                    {currentHeroSlide.tag}
+                  </span>
+                </div>
+
+                <h1
+                  className="mt-8 max-w-[20ch] text-[2.45rem] font-black leading-[1.08] tracking-tight sm:text-[3.15rem] lg:text-[3.75rem]"
+                  style={sequenceStyle(220)}
+                >
+                  {currentHeroSlide.title}
+                </h1>
+                <p className="mt-6 max-w-2xl text-[15px] leading-7 text-slate-300 sm:text-[1.02rem]" style={sequenceStyle(360)}>
+                  {currentHeroSlide.subtitle}
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row" style={sequenceStyle(500)}>
+                  <button
+                    onClick={() => onNavigate("courses")}
+                    className="inline-flex items-center justify-center gap-2 bg-[#FF6B00] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-[#e56000]"
+                  >
+                    Ouvrir les cours
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => onNavigate("document-ai")}
+                    className="inline-flex items-center justify-center gap-2 border border-white/20 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
+                  >
+                    Document IA
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="mt-10 flex items-center gap-3">
               {heroSlides.map((slide, i) => (
                 <button
                   key={slide.tag}
-                  onClick={() => setActiveSlide(i)}
+                  onClick={() => changeSlide(i)}
                   className={`h-1.5 transition-all duration-300 ${
                     i === activeSlide ? "w-10 bg-[#FF6B00]" : "w-4 bg-white/35 hover:bg-white/60"
                   }`}
@@ -345,26 +453,28 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       </section>
 
       <section className="bg-[#FF6B00] py-0 text-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-orange-500 px-4 sm:px-8 md:grid-cols-4">
-          {stats.map((item) => (
-            <div key={item.label} className="flex flex-col items-center justify-center px-4 py-7 text-center">
-              <span className="text-[30px] font-black leading-none">{item.value}</span>
-              <span className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-orange-100">{item.label}</span>
-            </div>
+        <StaggerContainer className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-orange-500 px-4 sm:px-8 md:grid-cols-4">
+          {stats.map((item, index) => (
+            <StaggerItem key={item.label} index={index}>
+              <div className="flex flex-col items-center justify-center px-4 py-7 text-center">
+                <span className="text-[30px] font-black leading-none">{item.value}</span>
+                <span className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-orange-100">{item.label}</span>
+              </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </section>
 
       <section className="bg-[#f3f4f6] py-16 dark:bg-[#0f1219]">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
           <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <div>
+            <SlideInLeft>
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#FF6B00]">A propos</p>
               <h2 className="mt-4 text-3xl font-black leading-tight text-[#0f0f1a] dark:text-white">Apprentissage continu</h2>
               <h3 className="mt-1 text-3xl font-black leading-tight text-[#0f0f1a] dark:text-white">
                 Concu pour les professionnels africains
               </h3>
-              <div className="mt-6 h-1 w-20 bg-[#FF6B00]" />
+              <RevealLine className="mt-6 h-1 w-20 bg-[#FF6B00]" />
               <p className="mt-8 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-400">
                 ZATI est une plateforme majeure d'apprentissage continu en Afrique, concue pour les professionnels en
                 activite, les personnes en reconversion et les apprenants qui veulent garder une longueur d'avance dans
@@ -381,9 +491,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 En savoir plus
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
-            </div>
+            </SlideInLeft>
 
-            <div className="relative overflow-visible bg-[linear-gradient(145deg,#31203a_0%,#1c1530_45%,#0c1224_100%)] px-10 py-14 text-white">
+            <SlideInRight delay={0.15}>
+              <div className="relative overflow-visible bg-[linear-gradient(145deg,#31203a_0%,#1c1530_45%,#0c1224_100%)] px-10 py-14 text-white transition-transform duration-400 hover:scale-[1.02]">
               <div className="absolute -left-3 -top-3 h-16 w-16 border-l-4 border-t-4 border-[#FF6B00]" />
               <div className="absolute -bottom-3 -right-3 h-16 w-16 border-b-4 border-r-4 border-[#FF6B00]" />
 
@@ -407,7 +518,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   </div>
                 ))}
               </div>
-            </div>
+              </div>
+            </SlideInRight>
           </div>
         </div>
       </section>
@@ -421,7 +533,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
-          <div className="mx-auto max-w-3xl text-center">
+          <FadeUp className="mx-auto max-w-3xl text-center">
             <div className="mb-6 flex items-center justify-center gap-3">
               <div className="h-px w-10 bg-[#FF6B00]" />
               <span className="text-xs font-bold uppercase tracking-[0.34em] text-[#FF6B00]">Explorer</span>
@@ -432,26 +544,28 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               Parcourez nos cours selectionnes et nos parcours intensifs concus pour les professionnels qui veulent
               progresser, se reorienter ou approfondir leur expertise a leur propre rythme.
             </p>
-          </div>
+          </FadeUp>
 
           <div className="mx-auto mt-10 max-w-6xl">
-            <div className="flex flex-col overflow-hidden border border-white/20 sm:flex-row">
-              <input
-                value={exploreQuery}
-                onChange={(e) => setExploreQuery(e.target.value)}
-                placeholder="Rechercher des cours, parcours, competences, sujets..."
-                className="h-14 flex-1 bg-white/7 px-5 text-base text-white placeholder:text-slate-400 outline-none"
-              />
-              <button
-                onClick={runSearchNow}
-                className="inline-flex h-14 items-center justify-center gap-2 bg-[#FF6B00] px-8 text-sm font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#e56000]"
-              >
-                <Search className="h-4 w-4" />
-                Rechercher
-              </button>
+            <div className="mx-auto max-w-4xl">
+              <FadeUp delay={0.2} className="flex flex-col overflow-hidden border border-white/20 sm:flex-row">
+                <input
+                  value={exploreQuery}
+                  onChange={(e) => setExploreQuery(e.target.value)}
+                  placeholder="Rechercher des cours, parcours, competences, sujets..."
+                  className="h-14 flex-1 bg-white/7 px-5 text-base text-white placeholder:text-slate-400 outline-none"
+                />
+                <button
+                  onClick={runSearchNow}
+                  className="inline-flex h-14 items-center justify-center gap-2 bg-[#FF6B00] px-8 text-sm font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#e56000]"
+                >
+                  <Search className="h-4 w-4" />
+                  Rechercher
+                </button>
+              </FadeUp>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
+            <FadeUp delay={0.3} className="mx-auto mt-6 flex max-w-4xl flex-wrap items-center gap-2 text-xs">
               <span className="mr-2 text-slate-400">Populaires :</span>
               {popularTags.map((tag) => (
                 <button
@@ -462,7 +576,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   #{tag}
                 </button>
               ))}
-            </div>
+            </FadeUp>
 
             {(exploreLoading || hasSearched) && (
               <div className="mt-8">
@@ -523,60 +637,62 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       <section className="bg-slate-50 py-20 dark:bg-[#10131c]">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
           <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+            <FadeUp>
               <div className="flex items-center gap-3">
                 <div className="h-px w-10 bg-[#FF6B00]" />
                 <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#FF6B00]">Parcours avances</span>
               </div>
               <h2 className="mt-5 text-3xl font-black text-[#0f0f1a] dark:text-white">Des parcours qui inspirent confiance</h2>
-            </div>
-            <button
-              onClick={() => onNavigate("courses")}
-              className="inline-flex items-center gap-2 border-b border-slate-300 pb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00] dark:border-slate-700 dark:text-slate-400"
-            >
-              Voir tous les cours
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+            </FadeUp>
+            <FadeUp delay={0.1}>
+              <button
+                onClick={() => onNavigate("courses")}
+                className="inline-flex items-center gap-2 border-b border-slate-300 pb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00] dark:border-slate-700 dark:text-slate-400"
+              >
+                Voir tous les cours
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </FadeUp>
           </div>
 
-          <div className="grid overflow-hidden border border-slate-200 md:grid-cols-2 xl:grid-cols-4 dark:border-slate-700">
+          <StaggerContainer className="grid overflow-hidden border border-slate-200 md:grid-cols-2 xl:grid-cols-4 dark:border-slate-700">
             {tracks.map((track, index) => {
               const Icon = track.icon;
               return (
-                <article
-                  key={track.title}
-                  className="group relative border-b border-r border-slate-200 bg-white px-7 py-5 transition-colors duration-300 hover:bg-[#0f0f1a] dark:border-slate-700 dark:bg-[#0f1219]"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center border border-slate-200 bg-slate-50 text-[#FF6B00] transition-colors duration-300 group-hover:border-white/20 group-hover:bg-white/10 dark:border-slate-700 dark:bg-slate-900/60">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8d9cbd] transition-colors duration-300 group-hover:text-white/70">{track.subtitle}</p>
-                  <h3 className="mt-2 max-w-[30ch] text-[1.6rem] font-black leading-tight text-[#0f0f1a] transition-colors duration-300 group-hover:text-white dark:text-white">
-                    {track.title}
-                  </h3>
-                  <p className="mt-3 max-w-[40ch] text-[13px] leading-6 text-slate-500 transition-colors duration-300 group-hover:text-slate-300 dark:text-slate-400">
-                    {track.description}
-                  </p>
-                  <button
-                    onClick={() => onNavigate("courses")}
-                    className="mt-6 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#FF6B00]"
-                  >
-                    Explorer
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="pointer-events-none absolute bottom-1 right-4 text-[68px] font-black leading-none text-slate-100 transition-colors duration-300 group-hover:text-white/10 dark:text-slate-800">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                </article>
+                <StaggerItem key={track.title} index={index}>
+                  <article className="group relative border-b border-r border-slate-200 bg-white px-5 py-4 transition-all duration-[350ms] hover:-translate-y-1 hover:bg-[#0f0f1a] dark:border-slate-700 dark:bg-[#0f1219]">
+                    <div className="flex h-10 w-10 items-center justify-center border border-slate-200 bg-slate-50 text-[#FF6B00] transition-all duration-300 group-hover:rotate-[5deg] group-hover:scale-105 group-hover:border-white/20 group-hover:bg-[#FF6B00] group-hover:text-white dark:border-slate-700 dark:bg-slate-900/60">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="mt-3 text-[9px] font-bold uppercase tracking-[0.18em] text-[#8d9cbd] transition-colors duration-300 group-hover:text-white/70">{track.subtitle}</p>
+                    <h3 className="mt-2 max-w-[30ch] text-[1.28rem] font-black leading-tight text-[#0f0f1a] transition-colors duration-300 group-hover:text-white dark:text-white">
+                      {track.title}
+                    </h3>
+                    <p className="mt-2.5 max-w-[40ch] text-[12px] leading-5 text-slate-500 transition-colors duration-300 group-hover:text-slate-300 dark:text-slate-400">
+                      {track.description}
+                    </p>
+                    <button
+                      onClick={() => onNavigate("courses")}
+                      className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#FF6B00]"
+                    >
+                      Explorer
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="pointer-events-none absolute bottom-1 right-3 text-[54px] font-black leading-none text-slate-100 transition-colors duration-300 group-hover:text-white/10 dark:text-slate-800">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#FF6B00] transition-all duration-500 group-hover:w-full" />
+                  </article>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
       <section className="bg-white py-20 dark:bg-[#0b0d14]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="border border-slate-200 bg-[#0f0f1a] p-8 text-white dark:border-slate-800">
+          <SlideInLeft className="border border-slate-200 bg-[#0f0f1a] p-8 text-white dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="h-px w-10 bg-[#FF6B00]" />
               <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#FF6B00]">Points forts</span>
@@ -588,12 +704,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#FF6B00]" />
                   <p className="text-sm leading-7 text-slate-300">{item}</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+          </SlideInLeft>
 
-          <div className="grid gap-6">
-            <div className="overflow-hidden border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#11141d]">
+          <SlideInRight delay={0.15} className="grid gap-6">
+            <ScaleIn className="overflow-hidden border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#11141d]">
               <img src="/zati/hero-2.png" alt="Programmes" className="h-64 w-full object-cover" />
               <div className="p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF6B00]">Apercu de la plateforme</p>
@@ -605,49 +721,23 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   navigation <strong className="text-slate-700 dark:text-slate-200">Cours</strong> ouvrir votre plateforme actuelle.
                 </p>
               </div>
-            </div>
+            </ScaleIn>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {news.map((item) => (
-                <article key={item.title} className="border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-[#10131c]">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {item.date}
-                  </div>
-                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{item.tag}</p>
-                  <h3 className="mt-2 text-lg font-black text-[#0f0f1a] dark:text-white">{item.title}</h3>
-                </article>
+            <StaggerContainer className="grid gap-6 md:grid-cols-2">
+              {news.map((item, index) => (
+                <StaggerItem key={item.title} index={index}>
+                  <article className="border border-slate-200 bg-slate-50 p-6 transition-transform duration-300 hover:translate-x-1 dark:border-slate-800 dark:bg-[#10131c]">
+                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {item.date}
+                    </div>
+                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{item.tag}</p>
+                    <h3 className="mt-2 text-lg font-black text-[#0f0f1a] dark:text-white">{item.title}</h3>
+                  </article>
+                </StaggerItem>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#0f0f1a] py-20 text-white">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="h-px w-10 bg-[#FF6B00]" />
-              <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#FF6B00]">Questions frequentes</span>
-            </div>
-            <h2 className="mt-5 text-3xl font-black">Une page d’accueil premium, un espace cours conserve.</h2>
-            <Accordion type="single" collapsible className="mt-8 w-full border-t border-white/10">
-              {faq.map((item) => (
-                <AccordionItem key={item.id} value={item.id} className="border-white/10">
-                  <AccordionTrigger className="text-left text-base font-bold text-white hover:no-underline">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm leading-7 text-slate-400">
-                    {item.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-
-          <div className="overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm">
-            <img src="/zati/hero-3.png" alt="Communaute" className="h-full min-h-[420px] w-full object-cover" />
-          </div>
+            </StaggerContainer>
+          </SlideInRight>
         </div>
       </section>
 

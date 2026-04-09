@@ -18,7 +18,7 @@ export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Quiz & Examens</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Entrainez-vous et passez vos evaluations ici.</p>
         </div>
-        <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2.5 text-sm text-white">
+        <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-4 py-2.5 text-sm text-white">
           <Brain className="h-4 w-4" />
           Generer un quiz IA
         </button>
@@ -31,7 +31,7 @@ export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
             onClick={() => setActiveFilter(label)}
             className={`rounded-xl px-4 py-2 text-sm ${
               activeFilter === label
-                ? "bg-blue-600 text-white"
+                ? "bg-[#FF6B00] text-white"
                 : "border border-slate-200 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
             }`}
           >
@@ -65,7 +65,7 @@ export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
                     description: "Le lancement du quiz fonctionnera des que les donnees backend seront connectees.",
                   })
                 }
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm text-white"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#FF6B00] py-2.5 text-sm text-white"
               >
                 <Play className="h-4 w-4" />
                 Commencer

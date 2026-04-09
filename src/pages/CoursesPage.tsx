@@ -99,7 +99,7 @@ function CourseCard({
       onClick={() => onSelect(course)}
       className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
     >
-      <div className="mb-4 flex h-28 w-full items-end rounded-xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 p-4 text-white">
+      <div className="mb-4 flex h-28 w-full items-end rounded-xl bg-gradient-to-br from-[#FFB347] via-[#FF9A3C] to-[#FF6B00] p-4 text-white">
         <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
           {course.categoryName}
         </span>
@@ -145,7 +145,7 @@ function CourseCard({
           e.stopPropagation();
           onOpen(course);
         }}
-        className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+        className="mt-4 inline-flex items-center justify-center rounded-lg bg-[#FF6B00] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[#e56000]"
       >
         Ouvrir le cours
       </button>
@@ -281,7 +281,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
                         key={`${chapter.title}-${index}`}
                         className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B00] dark:text-orange-400">
                           {chapter.title}
                         </p>
                         <ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
@@ -316,7 +316,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-3 text-sm font-medium ${
                   activeTab === tab.key
-                    ? "border-b-2 border-blue-600 text-blue-600"
+                    ? "border-b-2 border-[#FF6B00] text-[#FF6B00]"
                     : "text-slate-500 dark:text-slate-400"
                 }`}
               >
@@ -370,7 +370,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
               {activeTab === "all" ? (
                 <Star className="h-5 w-5 text-amber-500" />
               ) : (
-                <BookOpen className="h-5 w-5 text-blue-500" />
+                <BookOpen className="h-5 w-5 text-[#FF6B00]" />
               )}
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
             </div>
@@ -396,13 +396,13 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
           )}
 
           {isLoading ? (
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map((item) => (
                 <CourseCardSkeleton key={item} />
               ))}
             </section>
           ) : regularCourses.length > 0 ? (
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {regularCourses.map((course) => (
                 <CourseCard
                   key={course.id}

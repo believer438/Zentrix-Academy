@@ -9,7 +9,7 @@ export default function RevisionPage({ onOpenAI }: { onOpenAI: () => void }) {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Revision Espacee</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Revisez vos cartes et suivez votre rythme d'apprentissage.</p>
         </div>
-        <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2.5 text-sm text-white">
+        <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-4 py-2.5 text-sm text-white">
           <Brain className="h-4 w-4" />
           Generer des cartes
         </button>
@@ -33,7 +33,7 @@ export default function RevisionPage({ onOpenAI }: { onOpenAI: () => void }) {
           <div className="flex min-h-[240px] flex-col items-center justify-center text-center">
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="mt-4 h-4 w-2/3" />
-            <button className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm text-white opacity-70">
+            <button className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] px-6 py-3 text-sm text-white opacity-70">
               <Eye className="h-4 w-4" />
               Voir la reponse
             </button>
@@ -54,7 +54,7 @@ export default function RevisionPage({ onOpenAI }: { onOpenAI: () => void }) {
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900 dark:text-white">Toutes les cartes</h2>
-          <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm text-white opacity-70">
+          <button className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] px-4 py-2 text-sm text-white opacity-70">
             <RotateCcw className="h-4 w-4" />
             Recommencer
           </button>

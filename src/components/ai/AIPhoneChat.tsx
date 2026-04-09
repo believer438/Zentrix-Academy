@@ -248,7 +248,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
           borderRadius,
           boxShadow: screen === "in-call"
             ? "0 0 80px rgba(34,197,94,0.35)"
-            : "0 0 60px rgba(99,102,241,0.35)",
+            : "0 0 60px rgba(255,107,0,0.35)",
         }} />
       )}
 
@@ -283,17 +283,17 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
             style={{ background: "linear-gradient(180deg,#0f1117 0%,#050508 100%)" }}>
             {/* Animated rings */}
             {[1, 2, 3].map((r) => (
-              <div key={r} className="absolute rounded-full border border-indigo-500/20 animate-ping"
+              <div key={r} className="absolute rounded-full border border-orange-500/20 animate-ping"
                 style={{ width: 80 + r * 60, height: 80 + r * 60, animationDelay: `${r * 0.3}s`, animationDuration: "2s" }} />
             ))}
             <div className="relative z-10 flex flex-col items-center gap-4">
               <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-xl"
-                style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", boxShadow: "0 0 40px rgba(99,102,241,0.5)" }}>
+                style={{ background: "linear-gradient(135deg,#FFB347,#FF6B00)", boxShadow: "0 0 40px rgba(255,107,0,0.5)" }}>
                 <Bot className="w-12 h-12 text-white" />
               </div>
               <div className="text-center">
                 <p className="text-white text-2xl font-bold">Assistant IA</p>
-                <p className="text-indigo-300 text-sm mt-1 animate-pulse">Appel en cours...</p>
+                <p className="text-orange-300 text-sm mt-1 animate-pulse">Appel en cours...</p>
                 {contextCourse && <p className="text-white/40 text-xs mt-0.5 truncate px-4">{contextCourse}</p>}
               </div>
             </div>
@@ -324,20 +324,20 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
             <div className="relative z-10 flex flex-col items-center pt-8 gap-2">
               <p className="text-white/50 text-xs uppercase tracking-widest font-medium">Appel IA Vocal</p>
               <p className="text-white text-xl font-bold">Assistant IA</p>
-              <p className="text-indigo-300 text-xs">En attente de la reponse...</p>
+              <p className="text-orange-300 text-xs">En attente de la reponse...</p>
               <CallTimer />
             </div>
 
             {/* Avatar */}
             <div className="relative z-10 mt-6">
               <div className="w-28 h-28 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", boxShadow: "0 0 50px rgba(99,102,241,0.4)" }}>
+                style={{ background: "linear-gradient(135deg,#FFB347,#FF6B00)", boxShadow: "0 0 50px rgba(255,107,0,0.4)" }}>
                 <Bot className="w-14 h-14 text-white" />
               </div>
               {/* Sound waves */}
               <div className="absolute inset-0 flex items-center justify-center">
                 {[1, 2].map((r) => (
-                  <div key={r} className="absolute rounded-full border border-indigo-400/15 animate-ping"
+                  <div key={r} className="absolute rounded-full border border-orange-400/15 animate-ping"
                     style={{ width: 112 + r * 32, height: 112 + r * 32, animationDelay: `${r * 0.5}s`, animationDuration: "2.5s" }} />
                 ))}
               </div>
@@ -354,8 +354,8 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
                 return (
                   <button key={btn.label} onClick={btn.action} className="flex flex-col items-center gap-2">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center transition-all"
-                      style={{ background: btn.active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.1)", border: btn.active ? "1px solid rgba(99,102,241,0.5)" : "1px solid rgba(255,255,255,0.1)" }}>
-                      <Icon className={`w-6 h-6 ${btn.active ? "text-indigo-300" : "text-white/70"}`} />
+                      style={{ background: btn.active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.1)", border: btn.active ? "1px solid rgba(255,107,0,0.5)" : "1px solid rgba(255,255,255,0.1)" }}>
+                      <Icon className={`w-6 h-6 ${btn.active ? "text-orange-300" : "text-white/70"}`} />
                     </div>
                     <span className="text-white/50 text-[10px]">{btn.label}</span>
                   </button>
@@ -376,7 +376,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
 
             {/* Switch to chat */}
             <button onClick={() => setScreen("chat")}
-              className="relative z-10 mt-3 text-indigo-300/60 text-xs hover:text-indigo-300 transition-colors">
+              className="relative z-10 mt-3 text-orange-300/70 text-xs hover:text-orange-300 transition-colors">
               ← Retour au chat
             </button>
           </div>
@@ -403,7 +403,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
               >
                 <div className="flex flex-col gap-1">
                   <span className="block h-[2px] w-4 rounded-full bg-white/90" />
-                  <span className="block h-[2px] w-3 rounded-full bg-indigo-300" />
+                  <span className="block h-[2px] w-3 rounded-full bg-orange-300" />
                   <span className="block h-[2px] w-4 rounded-full bg-white/70" />
                 </div>
                 <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
@@ -472,14 +472,14 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
                 <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-1.5`}>
                   {msg.role === "assistant" && (
                     <div className="flex items-center justify-center rounded-full flex-shrink-0"
-                      style={{ width: 20, height: 20, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", marginBottom: 2 }}>
+                      style={{ width: 20, height: 20, background: "linear-gradient(135deg,#FFB347,#FF6B00)", marginBottom: 2 }}>
                       <Bot style={{ width: 10, height: 10, color: "white" }} />
                     </div>
                   )}
                   <div className="px-3 py-2" style={{
                     maxWidth: "82%",
                     borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    background: msg.role === "user" ? "linear-gradient(135deg,#4f46e5,#6d28d9)" : "rgba(255,255,255,0.07)",
+                    background: msg.role === "user" ? "linear-gradient(135deg,#FFB347,#FF6B00)" : "rgba(255,255,255,0.07)",
                     border: msg.role === "assistant" ? "1px solid rgba(255,255,255,0.06)" : "none",
                     color: msg.role === "user" ? "white" : "rgba(255,255,255,0.85)",
                   }}>
@@ -489,7 +489,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
               ))}
               {isTyping && (
                 <div className="flex items-end gap-1.5">
-                  <div className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}>
+                  <div className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, background: "linear-gradient(135deg,#FFB347,#FF6B00)" }}>
                     <Bot style={{ width: 10, height: 10, color: "white" }} />
                   </div>
                   <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -532,12 +532,12 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
                   placeholder="Posez votre question..."
                   disabled={isTyping}
                   className="flex-1 bg-transparent focus:outline-none min-w-0"
-                  style={{ color: "white", fontSize: 11, caretColor: "#6366f1" }}
+                  style={{ color: "white", fontSize: 11, caretColor: "#FF6B00" }}
                 />
               </div>
               <button onClick={() => sendMessage(input)} disabled={!input.trim() || isTyping}
                 className="flex items-center justify-center rounded-full flex-shrink-0 transition-all"
-                style={{ width: 32, height: 32, background: input.trim() && !isTyping ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "rgba(255,255,255,0.07)", boxShadow: input.trim() && !isTyping ? "0 4px 12px rgba(99,102,241,0.35)" : "none", opacity: input.trim() && !isTyping ? 1 : 0.45 }}>
+                style={{ width: 32, height: 32, background: input.trim() && !isTyping ? "linear-gradient(135deg,#FFB347,#FF6B00)" : "rgba(255,255,255,0.07)", boxShadow: input.trim() && !isTyping ? "0 4px 12px rgba(255,107,0,0.35)" : "none", opacity: input.trim() && !isTyping ? 1 : 0.45 }}>
                 <Send style={{ width: 12, height: 12, color: "white" }} />
               </button>
             </div>
@@ -555,7 +555,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
       <SheetContent side="left" className="border-slate-800 bg-[#090b10] text-white sm:max-w-xs">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-white">
-            <PanelLeft className="h-4 w-4 text-indigo-300" />
+            <PanelLeft className="h-4 w-4 text-orange-300" />
             Informations IA
           </SheetTitle>
           <SheetDescription className="text-slate-400">
@@ -611,8 +611,8 @@ export function AIPhoneToggle({ onClick, isOpen }: { onClick: () => void; isOpen
       onClick={onClick}
       className="fixed right-6 bottom-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
       style={{
-        background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
-        boxShadow: "0 8px 24px rgba(99,102,241,0.5)",
+        background: "linear-gradient(135deg,#FFB347,#FF6B00)",
+        boxShadow: "0 8px 24px rgba(255,107,0,0.5)",
       }}
     >
       <div className="relative">

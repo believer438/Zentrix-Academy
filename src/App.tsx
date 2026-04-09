@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AIPhoneChat, { AIPhoneToggle } from "@/components/ai/AIPhoneChat";
+import FirstVisitAuthPanel from "@/components/auth/FirstVisitAuthPanel";
+import SiteFooter from "@/components/layout/SiteFooter";
 import Dashboard from "@/pages/Dashboard";
 import CoursesPage from "@/pages/CoursesPage";
 import CourseDetail from "@/pages/CourseDetail";
@@ -50,6 +52,14 @@ const primaryNavItems = [
   { id: "notes", label: "Notes" },
 ];
 
+const FIRST_VISIT_PANEL_KEY = "zentrix_first_visit_auth_panel_seen";
+const SESSION_KEYS = ["eduplatform_session", "auth_token", "access_token", "session_token"];
+
+function hasActiveSession(): boolean {
+  if (typeof window === "undefined") return false;
+  return SESSION_KEYS.some((key) => Boolean(localStorage.getItem(key) || sessionStorage.getItem(key)));
+}
+
 function getCurrentPageFromPath(pathname: string): string {
   if (pathname === "/") return "dashboard";
   if (pathname.startsWith("/courses")) return "courses";
@@ -72,6 +82,8 @@ function App() {
   const [aiOpen, setAiOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showFirstVisitPanel, setShowFirstVisitPanel] = useState(false);
+  const [authPanelMode, setAuthPanelMode] = useState<"login" | "register">("login");
 
   const unreadNotifs = 0;
   const currentPage = useMemo(
@@ -92,6 +104,20 @@ function App() {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const panelSeen = localStorage.getItem(FIRST_VISIT_PANEL_KEY) === "1";
+    if (!panelSeen && !hasActiveSession()) {
+      setAuthPanelMode("login");
+      setShowFirstVisitPanel(true);
+    }
+  }, []);
+
+  const closeFirstVisitPanel = () => {
+    localStorage.setItem(FIRST_VISIT_PANEL_KEY, "1");
+    setShowFirstVisitPanel(false);
+  };
 
   const handleNavigate = (page: string, data?: unknown) => {
     setMobileMenuOpen(false);
@@ -147,20 +173,28 @@ function App() {
                   <button
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
-                    className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`group relative px-3 py-2 text-sm font-medium transition-colors ${
                       currentPage === item.id
                         ? "text-[#FF6B00]"
                         : "text-slate-700 hover:text-[#FF6B00] dark:text-slate-200"
                     }`}
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    <span
+                      className={`absolute bottom-0 left-0 h-[2px] w-full origin-left bg-[#FF6B00] transition-transform duration-300 ${
+                        currentPage === item.id ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                      }`}
+                    />
                   </button>
                 ))}
               </nav>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleNavigate("courses")}
+                  onClick={() => {
+                    setAuthPanelMode("register");
+                    setShowFirstVisitPanel(true);
+                  }}
                   className="hidden bg-[#FF6B00] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#e56000] md:inline-flex"
                 >
                   S'inscrire
@@ -229,6 +263,7 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <SiteFooter />
           </main>
         </div>
 
@@ -245,12 +280,23 @@ function App() {
           onClick={() => setAiOpen(!aiOpen)}
           className="fixed bottom-5 right-5 z-40 h-14 w-14 items-center justify-center rounded-full shadow-xl transition-all hover:scale-105 md:hidden"
           style={{
-            background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+            background: "linear-gradient(135deg,#FFB347,#FF6B00)",
             boxShadow: "0 8px 24px rgba(99,102,241,0.45)",
           }}
         >
           {aiOpen ? <X className="h-6 w-6 text-white" /> : <GraduationCap className="h-6 w-6 text-white" />}
         </button>
+
+        <FirstVisitAuthPanel
+          open={showFirstVisitPanel}
+          defaultMode={authPanelMode}
+          onClose={closeFirstVisitPanel}
+          onAuthenticated={() => {
+            localStorage.setItem(FIRST_VISIT_PANEL_KEY, "1");
+            setShowFirstVisitPanel(false);
+            navigate("/courses");
+          }}
+        />
       </div>
       <Toaster />
     </TooltipProvider>

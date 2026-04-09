@@ -30,7 +30,7 @@ export default function LibraryPage({ onOpenAI }: LibraryPageProps) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-5">
         {cards.map((item) => (
           <article key={item} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
             <Skeleton className="h-40 w-full rounded-none" />
@@ -47,7 +47,7 @@ export default function LibraryPage({ onOpenAI }: LibraryPageProps) {
                       description: "Le bouton Lire ouvrira la ressource des que l'URL backend sera disponible.",
                     })
                   }
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 py-2 text-sm text-white"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-black py-2 text-sm text-white transition-colors hover:bg-black/85"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Lire
@@ -63,7 +63,7 @@ export default function LibraryPage({ onOpenAI }: LibraryPageProps) {
                 >
                   <Download className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={onOpenAI} className="rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-purple-600">
+            <button onClick={onOpenAI} className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-[#FF6B00]">
                   <Brain className="h-3.5 w-3.5" />
                 </button>
               </div>

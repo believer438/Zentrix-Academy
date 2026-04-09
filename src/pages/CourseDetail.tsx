@@ -50,7 +50,7 @@ export default function CourseDetail({ course, onBack, onOpenAI }: CourseDetailP
             <p className="truncate text-xs text-slate-400">Cours</p>
             <h1 className="truncate text-sm font-semibold text-slate-900 dark:text-white">{course.title}</h1>
           </div>
-          <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm text-white">
+          <button onClick={onOpenAI} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-4 py-2 text-sm text-white">
             <Brain className="h-4 w-4" />
             IA
           </button>

@@ -590,13 +590,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => onNavigate("courses")}
-              className="mt-8 inline-flex items-center gap-2 bg-[#FF6B00] px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#e56000]"
-            >
-              Aller dans cours
-              <ArrowRight className="h-4 w-4" />
-            </button>
           </div>
 
           <div className="grid gap-6">
@@ -658,31 +651,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </div>
       </section>
 
-      <section className="bg-white px-4 py-14 sm:px-8 dark:bg-[#0b0d14]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 border-t-4 border-[#FF6B00] bg-[#0a0a14] px-6 py-10 text-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#FF6B00]">Etape suivante</p>
-            <h2 className="mt-3 text-3xl font-black">Entrez maintenant dans votre plateforme actuelle.</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-400">
-              L’accueil met la marque en valeur. La section Cours ouvre ensuite votre espace d’apprentissage existant.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={() => onNavigate("courses")}
-              className="bg-[#FF6B00] px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#e56000]"
-            >
-              Aller dans cours
-            </button>
-            <button
-              onClick={() => onNavigate("library")}
-              className="border border-white/15 px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
-            >
-              Bibliotheque
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

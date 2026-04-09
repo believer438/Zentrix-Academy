@@ -161,6 +161,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCoursePreview, setSelectedCoursePreview] = useState<Course | null>(null);
   const [isOutlineOpen, setIsOutlineOpen] = useState(true);
+  const [mobileOutlineOpen, setMobileOutlineOpen] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -205,10 +206,12 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
     });
   }, [baseCourses, category, level, search]);
 
-  const featuredCourses = useMemo(
-    () => filteredCourses.filter((course) => course.isFeatured).slice(0, 3),
-    [filteredCourses]
-  );
+  const featuredCourses = useMemo(() => {
+    const featured = filteredCourses.filter((course) => course.isFeatured);
+    if (featured.length >= 4) return featured.slice(0, 4);
+    const fillers = filteredCourses.filter((course) => !featured.some((item) => item.id === course.id));
+    return [...featured, ...fillers].slice(0, 4);
+  }, [filteredCourses]);
 
   const regularCourses = useMemo(
     () =>
@@ -229,6 +232,39 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
     setLevel("all");
   };
 
+  const outlineBody = !selectedCoursePreview ? (
+    <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+      Choisissez un cours pour afficher son plan ici.
+    </div>
+  ) : (
+    <div className="mt-4 space-y-3">
+      <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          Cours selectionne
+        </p>
+        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+          {selectedCoursePreview.title}
+        </p>
+      </div>
+
+      {selectedOutline.map((chapter, index) => (
+        <div
+          key={`${chapter.title}-${index}`}
+          className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B00] dark:text-orange-400">
+            {chapter.title}
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            {chapter.points.map((point) => (
+              <li key={point}>• {point}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+
   const title = activeTab === "all" ? "Tous les cours" : "Mes cours";
   const description =
     activeTab === "all"
@@ -237,8 +273,38 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
 
   return (
     <div className="w-full bg-white p-4 sm:p-6 dark:bg-slate-900">
+      <div className={`fixed inset-0 z-50 lg:hidden ${mobileOutlineOpen ? "" : "pointer-events-none"}`}>
+        <button
+          aria-label="Fermer le panneau de plan du cours"
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${mobileOutlineOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setMobileOutlineOpen(false)}
+        />
+        <aside
+          className={`absolute left-0 top-0 h-full w-[86%] max-w-sm overflow-y-auto border-r border-slate-200 bg-slate-50 p-4 transition-transform duration-300 dark:border-slate-800 dark:bg-slate-950 ${
+            mobileOutlineOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Plan du cours</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Chapitres, ordre de progression et points importants.
+              </p>
+            </div>
+            <button
+              onClick={() => setMobileOutlineOpen(false)}
+              aria-label="Fermer"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </div>
+          {outlineBody}
+        </aside>
+      </div>
+
       <div className={`grid gap-6 transition-all duration-300 ${isOutlineOpen ? "lg:grid-cols-[340px_1fr]" : "lg:grid-cols-[56px_1fr]"}`}>
-        <aside className="h-fit lg:sticky lg:top-24">
+        <aside className="hidden h-fit lg:sticky lg:top-24 lg:block">
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               {isOutlineOpen ? (
@@ -260,40 +326,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
             </div>
 
             {isOutlineOpen && (
-              <>
-                {!selectedCoursePreview ? (
-                  <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                    Choisissez un cours pour afficher son plan ici.
-                  </div>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                      <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                        Cours selectionne
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                        {selectedCoursePreview.title}
-                      </p>
-                    </div>
-
-                    {selectedOutline.map((chapter, index) => (
-                      <div
-                        key={`${chapter.title}-${index}`}
-                        className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B00] dark:text-orange-400">
-                          {chapter.title}
-                        </p>
-                        <ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                          {chapter.points.map((point) => (
-                            <li key={point}>• {point}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
+              <>{outlineBody}</>
             )}
           </section>
         </aside>
@@ -304,6 +337,15 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Retrouvez ici vos cours et les contenus disponibles.
             </p>
+            <div className="mt-3 lg:hidden">
+              <button
+                onClick={() => setMobileOutlineOpen(true)}
+                aria-label="Ouvrir le plan du cours"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3 border-b border-slate-200 dark:border-slate-800">
@@ -380,9 +422,9 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
           {activeTab === "all" && (
             <section>
               <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">Cours en vedette</h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {isLoading
-                  ? [0, 1, 2].map((item) => <CourseCardSkeleton key={item} />)
+                  ? [0, 1, 2, 3].map((item) => <CourseCardSkeleton key={item} />)
                   : featuredCourses.map((course) => (
                       <CourseCard
                         key={course.id}
@@ -397,7 +439,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
 
           {isLoading ? (
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map((item) => (
+              {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map((item) => (
                 <CourseCardSkeleton key={item} />
               ))}
             </section>

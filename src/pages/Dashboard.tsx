@@ -112,4 +112,60 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="flex h-40 items-end gap-2">
               {weeklyActivity.map((item) => (
                 <div key={`${item.day}-${item.value}`} className="flex flex-1 flex-col items-center justify-end gap-2">
-     
+                  <div className="flex w-full items-end rounded-full bg-slate-100 px-1 dark:bg-slate-800" style={{ height: 132 }}>
+                    <div
+                      className="w-full rounded-full bg-gradient-to-t from-blue-600 to-cyan-400"
+                      style={{ height: `${item.value}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-400">{item.day}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Cette semaine</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Votre rythme est stable avec un pic d'activite le week-end.</p>
+            </div>
+          </section>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Priorites du moment</h2>
+              <Sparkles className="h-4 w-4 text-amber-400" />
+            </div>
+            <div className="space-y-3">
+              {focusItems.map((item, index) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-sm font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-300">
+                    0{index + 1}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{item}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Action recommandee pour garder une bonne progression.</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-200/80">Assistant IA</p>
+            <h2 className="mt-3 text-xl font-semibold">Un support rapide quand vous en avez besoin</h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">
+              Demandez une explication, resumez un chapitre ou lancez une nouvelle conversation pendant votre apprentissage.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {["Expliquer un concept", "Resumer une lecon", "Generer un quiz", "Rechercher une ressource"].map((item) => (
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+                  <p className="text-sm font-medium text-white">{item}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

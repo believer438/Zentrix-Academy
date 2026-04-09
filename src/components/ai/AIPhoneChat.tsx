@@ -609,4 +609,17 @@ export function AIPhoneToggle({ onClick, isOpen }: { onClick: () => void; isOpen
   return (
     <button
       onClick={onClick}
-      className="fixed right-6 bottom-6 z-40 flex items-center gap-2
+      className="fixed right-6 bottom-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
+      style={{
+        background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+        boxShadow: "0 8px 24px rgba(99,102,241,0.5)",
+      }}
+    >
+      <div className="relative">
+        <Phone style={{ width: 17, height: 17, color: "white" }} />
+        <div className="absolute -top-1 -right-1 rounded-full border border-white animate-pulse" style={{ width: 8, height: 8, background: "#22c55e" }} />
+      </div>
+      <span className="text-white text-sm font-bold">IA</span>
+    </button>
+  );
+}

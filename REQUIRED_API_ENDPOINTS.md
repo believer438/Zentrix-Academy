@@ -7,6 +7,13 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 - Base URL exemple: `/api`
 - JSON en entree/sortie
 - Authentification recommandee: `Authorization: Bearer <token>`
+- Cote frontend Vite, definir l'URL du backend dans `.env`:
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+- Si votre backend expose deja le prefixe `/api`, le frontend construira ensuite les routes comme:
+  - `GET ${VITE_API_BASE_URL}/api/dashboard`
+  - `POST ${VITE_API_BASE_URL}/api/auth/login`
 
 ## Auth
 
@@ -53,13 +60,47 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
   "stats": {
     "enrolledCourses": 0,
     "studyHours": 0,
-    "quizzesPassed": 0,
-    "xpPoints": 0
+    "activeStreak": 0
   },
   "recentCourses": [],
   "weeklyActivity": [],
-  "recentBadges": [],
-  "recommendedCourses": []
+  "focusItems": [],
+  "aiShortcuts": []
+}
+```
+
+- Exemple plus proche du dashboard actuel:
+```json
+{
+  "user": {
+    "id": "usr_1",
+    "fullName": "User Name"
+  },
+  "stats": {
+    "enrolledCourses": 12,
+    "studyHours": 48,
+    "activeStreak": 8
+  },
+  "recentCourses": [
+    {
+      "id": "course_1",
+      "title": "Architecture frontend",
+      "progress": 68,
+      "meta": "Module 4 sur 8"
+    }
+  ],
+  "weeklyActivity": [
+    { "day": "L", "value": 42 },
+    { "day": "M", "value": 64 }
+  ],
+  "focusItems": [
+    "Reprendre un cours incomplet",
+    "Passer un quiz de revision"
+  ],
+  "aiShortcuts": [
+    "Expliquer un concept",
+    "Resumer une lecon"
+  ]
 }
 ```
 
@@ -146,6 +187,23 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 
 - Role: detail d'une ressource
 
+### `GET /api/library/books/:bookId/access`
+
+- Role: recuperer les liens de lecture et de telechargement
+- Response exemple:
+```json
+{
+  "bookId": "book_1",
+  "readUrl": "https://cdn.example.com/read/book_1",
+  "downloadUrl": "https://cdn.example.com/download/book_1.pdf",
+  "expiresAt": "2026-04-09T12:00:00.000Z"
+}
+```
+
+### `GET /api/library/categories`
+
+- Role: lister les categories de la bibliotheque pour les filtres ou facettes
+
 ## Quizzes
 
 ### `GET /api/quizzes`
@@ -172,6 +230,18 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 ### `GET /api/quizzes/:quizId/result`
 
 - Role: recuperer le resultat d'une tentative
+
+### `POST /api/quizzes/:quizId/resume`
+
+- Role: reprendre une tentative en cours
+- Response exemple:
+```json
+{
+  "attemptId": "attempt_123",
+  "status": "in_progress",
+  "remainingTime": 820
+}
+```
 
 ## Revision / Flashcards
 
@@ -211,6 +281,11 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 
 - Role: creer une note
 
+### `GET /api/notes/:noteId`
+
+- Role: recuperer le detail complet d'une note
+- Utile pour l'ecran principal de lecture/edition
+
 ### `PATCH /api/notes/:noteId`
 
 - Role: modifier une note
@@ -223,15 +298,9 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 
 - Role: marquer / demarquer comme favori
 
-## Badges
+### `DELETE /api/notes/:noteId/favorite`
 
-### `GET /api/badges`
-
-- Role: lister tous les badges utilisateur
-
-### `GET /api/users/me/xp`
-
-- Role: recuperer l'etat de progression XP/niveau
+- Role: retirer le statut favori si vous preferez une API REST explicite
 
 ## Analytics
 
@@ -265,7 +334,19 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 
 - Role: tout marquer comme lu
 
+### `GET /api/notifications/unread-count`
+
+- Role: recuperer rapidement le compteur de non lues pour la sidebar, le header ou le bootstrap
+
 ## IA / Chat
+
+### `GET /api/ai/conversations`
+
+- Role: lister les conversations IA de l'utilisateur
+- Query params recommandés:
+  - `page`
+  - `limit`
+  - `contextCourseId`
 
 ### `GET /api/ai/conversations/:conversationId/messages`
 
@@ -274,6 +355,13 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 ### `POST /api/ai/conversations`
 
 - Role: creer une conversation
+- Body exemple:
+```json
+{
+  "title": "Nouveau chat",
+  "contextCourseId": "course_123"
+}
+```
 
 ### `POST /api/ai/conversations/:conversationId/messages`
 
@@ -290,6 +378,70 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 
 - Role: connaitre l'etat du traitement IA
 
+### `PATCH /api/ai/conversations/:conversationId`
+
+- Role: renommer ou mettre a jour les metadonnees d'une conversation
+
+### `DELETE /api/ai/conversations/:conversationId`
+
+- Role: supprimer ou archiver une conversation
+
+## IA / Document
+
+### `POST /api/ai/documents`
+
+- Role: uploader un document pour analyse IA
+- Content-Type recommande: `multipart/form-data`
+- Champs recommandes:
+  - `file`
+  - `title`
+
+### `POST /api/ai/documents/:documentId/analyze`
+
+- Role: lancer une analyse sur un document importe
+- Body exemple:
+```json
+{
+  "actions": ["explain", "quiz", "logic"],
+  "instruction": "Explique ce document comme a un debutant"
+}
+```
+
+### `GET /api/ai/documents/:documentId`
+
+- Role: recuperer les metadonnees d'un document importe
+
+### `GET /api/ai/documents/:documentId/status`
+
+- Role: connaitre l'etat de traitement de l'analyse
+- Valeurs possibles par exemple:
+  - `uploaded`
+  - `processing`
+  - `completed`
+  - `failed`
+
+### `GET /api/ai/documents/:documentId/result`
+
+- Role: recuperer le resultat principal de l'analyse
+- Response exemple:
+```json
+{
+  "documentId": "doc_1",
+  "summary": "Resume structure du document",
+  "explanation": "Explication detaillee",
+  "logicBreakdown": "Analyse logique",
+  "generatedQuiz": []
+}
+```
+
+### `GET /api/ai/documents/:documentId/questions`
+
+- Role: recuperer les questions/reponses generees pour le panneau lateral
+
+### `DELETE /api/ai/documents/:documentId`
+
+- Role: supprimer un document importe ou son analyse
+
 ## Endpoint agregateur optionnel
 
 ### `GET /api/bootstrap`
@@ -300,6 +452,30 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
   - preferences
   - compteur notifications non lues
   - dashboard resume
+  - conversation IA recente
+
+## Reponses d'erreur recommandees
+
+Pour garder le frontend stable, standardiser les erreurs:
+
+```json
+{
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "Le document demande est introuvable.",
+    "details": null
+  }
+}
+```
+
+Codes utiles a prevoir:
+- `UNAUTHORIZED`
+- `FORBIDDEN`
+- `VALIDATION_ERROR`
+- `RESOURCE_NOT_FOUND`
+- `UPLOAD_FAILED`
+- `AI_PROCESSING_FAILED`
+- `RATE_LIMITED`
 
 ## Minimum backend pour rendre l'application utilisable
 
@@ -311,7 +487,9 @@ Ce document liste les endpoints backend necessaires pour alimenter tout le front
 6. `GET /api/quizzes`
 7. `GET /api/notes`
 8. `GET /api/revision/cards/today`
-9. `GET /api/badges`
-10. `GET /api/library/books`
-11. `GET /api/analytics/overview`
+9. `GET /api/library/books`
+10. `GET /api/analytics/overview`
+11. `POST /api/ai/conversations`
 12. `POST /api/ai/conversations/:conversationId/messages`
+13. `POST /api/ai/documents`
+14. `POST /api/ai/documents/:documentId/analyze`

@@ -1,4 +1,5 @@
 import { ArrowRight, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const topCards = [
   {
@@ -16,6 +17,14 @@ const topCards = [
     description: "Free workshops, masterclasses, and networking sessions.",
     highlighted: false,
   },
+];
+
+const quickLinks = [
+  { label: "Home", to: "/" },
+  { label: "About", to: "/" },
+  { label: "All Courses", to: "/courses" },
+  { label: "Enroll", to: "/courses" },
+  { label: "Community", to: "/library" },
 ];
 
 export default function SiteFooter() {
@@ -71,11 +80,16 @@ export default function SiteFooter() {
 
             <div>
               <h4 className="text-[18px] font-black uppercase tracking-[0.2em]">Quick Links</h4>
-              <ul className="mt-5 space-y-3 text-[14px] text-[#7f8aac]">
-                {["Home", "About", "All Courses", "Enroll", "Community"].map((item) => (
-                  <li key={item} className="flex items-center gap-4">
+              <ul className="mt-5 space-y-3 text-[14px]">
+                {quickLinks.map((item) => (
+                  <li key={item.label} className="flex items-center gap-4">
                     <span className="text-[#4f5b80]">-</span>
-                    {item}
+                    <Link
+                      to={item.to}
+                      className="cursor-pointer text-[#7f8aac] transition-all duration-200 hover:translate-x-1 hover:text-[#FF6B00]"
+                    >
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

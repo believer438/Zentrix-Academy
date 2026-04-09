@@ -1,6 +1,3 @@
-# Backend Data Requirements
-
-Ce projet n'affiche plus de donnees simulees. Toutes les vues doivent etre alimentees par le backend.
 
 ## Regles generales
 

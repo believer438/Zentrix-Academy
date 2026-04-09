@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
   const monthBars = [0, 0, 0, 0, 0, 0];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6 text-slate-900 dark:text-white">
+    <div className="w-full space-y-6 p-6 text-slate-900 dark:text-white">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Statistiques</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

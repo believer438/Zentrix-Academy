@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Clock, Search, Star, Users } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Clock, Search, Star, Users } from "lucide-react";
 import {
   Empty,
   EmptyDescription,
@@ -20,6 +20,38 @@ function isSimulationCourse(course: Course) {
 }
 
 const mockCourses: Course[] = [];
+
+interface CourseOutlineChapter {
+  title: string;
+  points: string[];
+}
+
+function buildCourseOutline(course: Course): CourseOutlineChapter[] {
+  const chapterCount = Math.max(
+    3,
+    Math.min(
+      course.chaptersCount || Math.ceil(Math.max(course.lessonsCount, 1) / 3),
+      8
+    )
+  );
+
+  const normalizedTags = (course.tags ?? [])
+    .filter(Boolean)
+    .map((tag) => tag.replace(/([a-z])([A-Z])/g, "$1 $2"));
+
+  return Array.from({ length: chapterCount }, (_, index) => {
+    const firstTag = normalizedTags[index % Math.max(normalizedTags.length, 1)] ?? "Fondamentaux";
+    const secondTag = normalizedTags[(index + 1) % Math.max(normalizedTags.length, 1)] ?? "Pratique";
+    return {
+      title: `Chapitre ${index + 1}`,
+      points: [
+        `Concept cle: ${firstTag}`,
+        `Point important: ${secondTag}`,
+        `Application pratique et recapitulatif`,
+      ],
+    };
+  });
+}
 
 function CourseCardSkeleton() {
   return (
@@ -49,9 +81,11 @@ function CourseCardSkeleton() {
 
 function CourseCard({
   course,
+  onSelect,
   onOpen,
 }: {
   course: Course;
+  onSelect: (course: Course) => void;
   onOpen: (course: Course) => void;
 }) {
   const difficultyLabel = {
@@ -62,7 +96,7 @@ function CourseCard({
 
   return (
     <article
-      onClick={() => onOpen(course)}
+      onClick={() => onSelect(course)}
       className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
     >
       <div className="mb-4 flex h-28 w-full items-end rounded-xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 p-4 text-white">
@@ -105,6 +139,16 @@ function CourseCard({
           <span>{course.enrolledCount}</span>
         </div>
       </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen(course);
+        }}
+        className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+      >
+        Ouvrir le cours
+      </button>
     </article>
   );
 }
@@ -115,6 +159,8 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
   const [category, setCategory] = useState("all");
   const [level, setLevel] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCoursePreview, setSelectedCoursePreview] = useState<Course | null>(null);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true);
 
   useEffect(() => {
     setIsLoading(true);
@@ -172,6 +218,11 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
     [activeTab, filteredCourses]
   );
 
+  const selectedOutline = useMemo(
+    () => (selectedCoursePreview ? buildCourseOutline(selectedCoursePreview) : []),
+    [selectedCoursePreview]
+  );
+
   const resetFilters = () => {
     setSearch("");
     setCategory("all");
@@ -185,131 +236,198 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
       : "Retrouvez ici les cours auxquels vous etes deja inscrit.";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 bg-white p-4 sm:p-6 dark:bg-slate-900">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cours</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Retrouvez ici vos cours et les contenus disponibles.
-        </p>
-      </div>
+    <div className="w-full bg-white p-4 sm:p-6 dark:bg-slate-900">
+      <div className={`grid gap-6 transition-all duration-300 ${isOutlineOpen ? "lg:grid-cols-[340px_1fr]" : "lg:grid-cols-[56px_1fr]"}`}>
+        <aside className="h-fit lg:sticky lg:top-24">
+          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-start justify-between gap-3">
+              {isOutlineOpen ? (
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Plan du cours</h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Chapitres, ordre de progression et points importants.
+                </p>
+              </div>
+              ) : null}
+              <button
+                onClick={() => setIsOutlineOpen((v) => !v)}
+                aria-label={isOutlineOpen ? "Fermer le panneau" : "Ouvrir le panneau"}
+                title={isOutlineOpen ? "Fermer" : "Ouvrir"}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                {isOutlineOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+            </div>
 
-      <div className="flex gap-3 border-b border-slate-200 dark:border-slate-800">
-        {[
-          { key: "all" as const, label: "Tous les cours" },
-          { key: "mine" as const, label: "Mes cours" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-3 text-sm font-medium ${
-              activeTab === tab.key
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-500 dark:text-slate-400"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+            {isOutlineOpen && (
+              <>
+                {!selectedCoursePreview ? (
+                  <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    Choisissez un cours pour afficher son plan ici.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                      <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                        Cours selectionne
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                        {selectedCoursePreview.title}
+                      </p>
+                    </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={activeTab === "all" ? "Rechercher un cours..." : "Rechercher dans mes cours..."}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-          />
-        </div>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
-        >
-          <option value="all">Toutes les categories</option>
-          {categories.map((categoryName) => (
-            <option key={categoryName} value={categoryName}>
-              {categoryName}
-            </option>
-          ))}
-        </select>
-        <select
-          value={level}
-          onChange={(e) => setLevel(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
-        >
-          <option value="all">Tous les niveaux</option>
-          <option value="beginner">Debutant</option>
-          <option value="intermediate">Intermediaire</option>
-          <option value="advanced">Avance</option>
-        </select>
-        <button
-          onClick={resetFilters}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
-        >
-          Reinitialiser
-        </button>
-      </div>
+                    {selectedOutline.map((chapter, index) => (
+                      <div
+                        key={`${chapter.title}-${index}`}
+                        className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                          {chapter.title}
+                        </p>
+                        <ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                          {chapter.points.map((point) => (
+                            <li key={point}>• {point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        </aside>
 
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          {activeTab === "all" ? (
-            <Star className="h-5 w-5 text-amber-500" />
-          ) : (
-            <BookOpen className="h-5 w-5 text-blue-500" />
-          )}
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
-        </div>
-        <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
-      </section>
-
-      {activeTab === "all" && (
-        <section>
-          <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">Cours en vedette</h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {isLoading
-              ? [0, 1, 2].map((item) => <CourseCardSkeleton key={item} />)
-              : featuredCourses.map((course) => (
-                  <CourseCard
-                    key={course.id}
-                    course={course}
-                    onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
-                  />
-                ))}
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cours</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Retrouvez ici vos cours et les contenus disponibles.
+            </p>
           </div>
-        </section>
-      )}
 
-      {isLoading ? (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map((item) => (
-            <CourseCardSkeleton key={item} />
-          ))}
-        </section>
-      ) : regularCourses.length > 0 ? (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {regularCourses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
-            />
-          ))}
-        </section>
-      ) : (
-        <Empty className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Search className="h-5 w-5" />
-            </EmptyMedia>
-            <EmptyTitle>Aucun cours trouve</EmptyTitle>
-            <EmptyDescription>
-              Aucun cours n'est disponible pour le moment. Revenez un peu plus tard.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      )}
+          <div className="flex gap-3 border-b border-slate-200 dark:border-slate-800">
+            {[
+              { key: "all" as const, label: "Tous les cours" },
+              { key: "mine" as const, label: "Mes cours" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-3 text-sm font-medium ${
+                  activeTab === tab.key
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-slate-500 dark:text-slate-400"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <div className="relative min-w-[240px] flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={activeTab === "all" ? "Rechercher un cours..." : "Rechercher dans mes cours..."}
+                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            >
+              <option value="all">Toutes les categories</option>
+              {categories.map((categoryName) => (
+                <option key={categoryName} value={categoryName}>
+                  {categoryName}
+                </option>
+              ))}
+            </select>
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            >
+              <option value="all">Tous les niveaux</option>
+              <option value="beginner">Debutant</option>
+              <option value="intermediate">Intermediaire</option>
+              <option value="advanced">Avance</option>
+            </select>
+            <button
+              onClick={resetFilters}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            >
+              Reinitialiser
+            </button>
+          </div>
+
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              {activeTab === "all" ? (
+                <Star className="h-5 w-5 text-amber-500" />
+              ) : (
+                <BookOpen className="h-5 w-5 text-blue-500" />
+              )}
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
+          </section>
+
+          {activeTab === "all" && (
+            <section>
+              <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">Cours en vedette</h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {isLoading
+                  ? [0, 1, 2].map((item) => <CourseCardSkeleton key={item} />)
+                  : featuredCourses.map((course) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        onSelect={setSelectedCoursePreview}
+                        onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
+                      />
+                    ))}
+              </div>
+            </section>
+          )}
+
+          {isLoading ? (
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map((item) => (
+                <CourseCardSkeleton key={item} />
+              ))}
+            </section>
+          ) : regularCourses.length > 0 ? (
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {regularCourses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onSelect={setSelectedCoursePreview}
+                  onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
+                />
+              ))}
+            </section>
+          ) : (
+            <Empty className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Search className="h-5 w-5" />
+                </EmptyMedia>
+                <EmptyTitle>Aucun cours trouve</EmptyTitle>
+                <EmptyDescription>
+                  Aucun cours n'est disponible pour le moment. Revenez un peu plus tard.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }

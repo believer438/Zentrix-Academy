@@ -14,7 +14,7 @@ export default function LibraryPage({ onOpenAI }: LibraryPageProps) {
   const cards = useMemo(() => Array.from({ length: 6 }, (_, index) => index), []);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="w-full space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Bibliotheque</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Retrouvez ici vos livres et ressources d'apprentissage.</p>

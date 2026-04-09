@@ -8,7 +8,7 @@ export default function NotificationsPage() {
   const { toast } = useToast();
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="w-full space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>

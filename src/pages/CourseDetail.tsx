@@ -56,7 +56,7 @@ export default function CourseDetail({ course, onBack, onOpenAI }: CourseDetailP
           </button>
         </div>
 
-        <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6">
+        <div className="w-full space-y-6 px-4 py-6 sm:px-6">
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
             <Skeleton className="aspect-video w-full rounded-none" />
           </div>

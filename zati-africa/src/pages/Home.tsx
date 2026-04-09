@@ -84,7 +84,12 @@ const STATS = [
   { value: "15+", label: "Industry Partners", icon: Award },
 ];
 
-function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+type AnimatedBlockProps = React.ComponentPropsWithoutRef<"div"> & {
+  children: React.ReactNode;
+  delay?: number;
+};
+
+function FadeUp({ children, delay = 0, className = "", ...rest }: AnimatedBlockProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -94,13 +99,14 @@ function FadeUp({ children, delay = 0, className = "" }: { children: React.React
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
       transition={{ duration: 0.7, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.div>
   );
 }
 
-function SlideInLeft({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+function SlideInLeft({ children, delay = 0, className = "", ...rest }: AnimatedBlockProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -110,13 +116,14 @@ function SlideInLeft({ children, delay = 0, className = "" }: { children: React.
       animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -80 }}
       transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.div>
   );
 }
 
-function SlideInRight({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+function SlideInRight({ children, delay = 0, className = "", ...rest }: AnimatedBlockProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -126,13 +133,14 @@ function SlideInRight({ children, delay = 0, className = "" }: { children: React
       animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 80 }}
       transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.div>
   );
 }
 
-function ScaleIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+function ScaleIn({ children, delay = 0, className = "", ...rest }: AnimatedBlockProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -142,6 +150,7 @@ function ScaleIn({ children, delay = 0, className = "" }: { children: React.Reac
       animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.85 }}
       transition={{ duration: 0.6, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.div>

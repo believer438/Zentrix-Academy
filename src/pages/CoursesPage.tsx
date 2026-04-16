@@ -8,6 +8,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHero from "@/components/ui/PageHero";
 import { type Course } from "@/lib/backend-types";
 
 interface CoursesPageProps {
@@ -272,7 +273,14 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
       : "Retrouvez ici les cours auxquels vous etes deja inscrit.";
 
   return (
-    <div className="w-full bg-white p-4 sm:p-6 dark:bg-slate-900">
+    <div className="w-full space-y-6 bg-white p-4 sm:p-6 dark:bg-slate-900">
+      <PageHero
+        title="Tous les cours"
+        subtitle="Explorez nos formations et démarrez votre parcours d'apprentissage dès aujourd'hui"
+        backgroundImage="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&h=400&fit=crop"
+        icon={<BookOpen className="h-8 w-8" />}
+      />
+
       <div className={`fixed inset-0 z-50 lg:hidden ${mobileOutlineOpen ? "" : "pointer-events-none"}`}>
         <button
           aria-label="Fermer le panneau de plan du cours"

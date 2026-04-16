@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
 
 export default function NotificationsPage() {
@@ -9,6 +10,13 @@ export default function NotificationsPage() {
 
   return (
     <div className="w-full space-y-6 p-6">
+      <PageHero
+        title="Notifications"
+        subtitle="Restez informé de tous vos événements importants"
+        backgroundImage="https://images.unsplash.com/photo-1460925895917-adf4198c868f?w=1200&h=400&fit=crop"
+        icon={<Bell className="h-8 w-8" />}
+      />
+
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Brain, Play, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
 
 interface QuizzesPageProps {
@@ -13,6 +14,13 @@ export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
 
   return (
     <div className="w-full space-y-6 p-6">
+      <PageHero
+        title="Quiz & Examens"
+        subtitle="Testez vos connaissances et préparez-vous avec nos évaluations"
+        backgroundImage="https://images.unsplash.com/photo-1516534775068-bb57e39c8ac3?w=1200&h=400&fit=crop"
+        icon={<Play className="h-8 w-8" />}
+      />
+
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Quiz & Examens</h1>

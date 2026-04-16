@@ -1,6 +1,16 @@
+import { Settings } from "lucide-react";
+import PageHero from "@/components/ui/PageHero";
+
 export default function SettingsPage() {
   return (
     <div className="w-full space-y-6 p-6">
+      <PageHero
+        title="Paramètres"
+        subtitle="Gérez votre profil et vos préférences personnelles"
+        backgroundImage="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop"
+        icon={<Settings className="h-8 w-8" />}
+      />
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Parametres</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Gerez ici votre profil et vos preferences.</p>

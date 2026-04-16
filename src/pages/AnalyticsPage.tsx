@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
+import PageHero from "@/components/ui/PageHero";
 
 export default function AnalyticsPage() {
   const stats = useMemo(
@@ -16,6 +17,13 @@ export default function AnalyticsPage() {
 
   return (
     <div className="w-full space-y-6 p-6 text-slate-900 dark:text-white">
+      <PageHero
+        title="Statistiques"
+        subtitle="Suivez votre progression et vos statistiques d'apprentissage"
+        backgroundImage="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=400&fit=crop"
+        icon={<BarChart3 className="h-8 w-8" />}
+      />
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Statistiques</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Brain, Download, ExternalLink, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
 
 interface LibraryPageProps {
@@ -15,6 +16,13 @@ export default function LibraryPage({ onOpenAI }: LibraryPageProps) {
 
   return (
     <div className="w-full space-y-6 p-6">
+      <PageHero
+        title="Bibliothèque"
+        subtitle="Accédez à une collection complète de ressources d'apprentissage"
+        backgroundImage="https://images.unsplash.com/photo-1524174259981-876d33c79747?w=1200&h=400&fit=crop"
+        icon={<Brain className="h-8 w-8" />}
+      />
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Bibliotheque</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Retrouvez ici vos livres et ressources d'apprentissage.</p>

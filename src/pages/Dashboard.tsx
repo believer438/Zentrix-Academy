@@ -53,14 +53,14 @@ const heroSlides = [
     title: "Montez en competences. Evoluez. Avancez a votre rythme.",
     subtitle:
       "Une experience d'accueil premium avec des parcours visibles des l'entree et une transition fluide vers votre espace cours.",
-    image: "/zati/hero-1.png",
+    image: "/zati/cours.jpg",
   },
   {
     tag: "Apprentissage tout au long de la vie",
     title: "Continuez d'apprendre, de progresser et de garder une longueur d'avance.",
     subtitle:
       "Des programmes structures, une bibliotheque active et des outils IA integres pour rester en progression continue.",
-    image: "/zati/hero-2.png",
+    image: "/zati/hero-2.avif",
   },
   {
     tag: "Pratique. Transformateur.",
@@ -710,7 +710,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           <SlideInRight delay={0.15} className="grid gap-6">
             <ScaleIn className="overflow-hidden border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#11141d]">
-              <img src="/zati/hero-2.png" alt="Programmes" className="h-64 w-full object-cover" />
+              <img src="/zati/hero-2.avif" alt="Programmes" className="h-64 w-full object-cover" />
               <div className="p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF6B00]">Apercu de la plateforme</p>
                 <h3 className="mt-3 text-2xl font-black text-[#0f0f1a] dark:text-white">

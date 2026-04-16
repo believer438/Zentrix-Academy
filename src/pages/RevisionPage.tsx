@@ -1,9 +1,17 @@
 import { Brain, Eye, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import PageHero from "@/components/ui/PageHero";
 
 export default function RevisionPage({ onOpenAI }: { onOpenAI: () => void }) {
   return (
     <div className="w-full space-y-6 p-6">
+      <PageHero
+        title="Révision Espacée"
+        subtitle="Révisez intelligemment avec notre système d'espacement adaptatif"
+        backgroundImage="https://images.unsplash.com/photo-1553729694-cb0a9e7302a0?w=1200&h=400&fit=crop"
+        icon={<RotateCcw className="h-8 w-8" />}
+      />
+
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Revision Espacee</h1>

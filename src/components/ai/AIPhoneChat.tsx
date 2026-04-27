@@ -397,7 +397,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
 
               <button
                 onClick={() => setInfoOpen(true)}
-                className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 transition-all hover:bg-white/10"
+                className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none border border-white/10 bg-white/6 transition-all hover:bg-white/10"
                 style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" }}
                 title="Informations"
               >
@@ -461,7 +461,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5"
               style={{ background: "linear-gradient(180deg,#090b10 0%,#0b0e16 100%)", scrollbarWidth: "none" }}>
               {messages.length === 0 && !isTyping && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white/75">
+                <div className="rounded-none border border-white/10 bg-white/5 p-4 text-white/75">
                   <p className="text-sm font-semibold">Assistant IA en attente</p>
                   <p className="mt-1 text-[11px] leading-relaxed text-white/55">
                     Ecrivez votre message et attendez la reponse de l'assistant.
@@ -492,7 +492,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
                   <div className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, background: "linear-gradient(135deg,#FFB347,#FF6B00)" }}>
                     <Bot style={{ width: 10, height: 10, color: "white" }} />
                   </div>
-                  <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="rounded-none px-3 py-2.5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.06)" }}>
                     <p className="text-[11px] text-white/70">Reponse de l'IA en attente...</p>
                   </div>
                 </div>
@@ -564,14 +564,14 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+          <div className="rounded-none border border-white/8 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Contexte</p>
             <p className="mt-2 text-sm font-medium text-white">
               {contextCourse || "Aucun cours selectionne"}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+          <div className="rounded-none border border-white/8 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Etat</p>
             <div className="mt-3 space-y-2 text-sm text-slate-200">
               <div className="flex items-center justify-between">
@@ -589,7 +589,7 @@ export default function AIPhoneChat({ isOpen, onClose, contextCourse }: AIPhoneC
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+          <div className="rounded-none border border-white/8 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Raccourcis</p>
             <div className="mt-3 space-y-2 text-sm text-slate-300">
               <div>Explique un concept</div>
@@ -609,7 +609,7 @@ export function AIPhoneToggle({ onClick, isOpen }: { onClick: () => void; isOpen
   return (
     <button
       onClick={onClick}
-      className="fixed right-6 bottom-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95"
+      className="fixed right-6 bottom-6 z-40 flex items-center gap-2 px-4 py-3 rounded-none transition-all hover:scale-105 active:scale-95"
       style={{
         background: "linear-gradient(135deg,#FFB347,#FF6B00)",
         boxShadow: "0 8px 24px rgba(255,107,0,0.5)",

@@ -119,7 +119,7 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
                 onClick={() => onNavigate(item.id)}
                 title={collapsed ? item.label : undefined}
                 className={`
-                  w-full flex items-center rounded-xl transition-all text-sm
+                  w-full flex items-center rounded-none transition-all text-sm
                   ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
                   ${isActive
                     ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold"
@@ -151,7 +151,7 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
               onClick={() => onNavigate(item.id)}
               title={collapsed ? item.label : undefined}
               className={`
-                w-full flex items-center rounded-xl transition-all text-sm relative
+                w-full flex items-center rounded-none transition-all text-sm relative
                 ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
                 ${isActive
                   ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold"
@@ -184,7 +184,7 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
           onClick={() => onNavigate("ai-chat")}
           title={collapsed ? "Assistant IA" : undefined}
           className={`
-            w-full mt-2 flex items-center rounded-xl text-white text-sm font-semibold
+            w-full mt-2 flex items-center rounded-none text-white text-sm font-semibold
             transition-all hover:opacity-90 active:scale-95
             ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
           `}

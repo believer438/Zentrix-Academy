@@ -1,0 +1,120 @@
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  color: string;
+  courseCount: number;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  categoryId: string;
+  categoryName: string;
+  professor: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  estimatedDuration: number;
+  chaptersCount: number;
+  lessonsCount: number;
+  enrolledCount: number;
+  progress: number;
+  isEnrolled: boolean;
+  isFeatured: boolean;
+  tags: string[];
+}
+
+export interface Chapter {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  orderIndex: number;
+  lessons: Lesson[];
+}
+
+export interface Lesson {
+  id: string;
+  chapterId: string;
+  title: string;
+  orderIndex: number;
+  isCompleted: boolean;
+  isLocked: boolean;
+  estimatedDuration: number;
+  blocks: LessonBlock[];
+}
+
+export interface LessonBlock {
+  id: string;
+  lessonId: string;
+  blockType: "text" | "video" | "quiz" | "poll" | "exercise" | "code";
+  content: Record<string, unknown>;
+  orderIndex: number;
+  isRequired: boolean;
+  isCompleted: boolean;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  coverImage: string;
+  categoryName: string;
+  pageCount: number;
+  language: string;
+}
+
+export interface Quiz {
+  id: string;
+  courseId: string;
+  courseName: string;
+  title: string;
+  description: string;
+  questionCount: number;
+  timeLimit: number;
+  passingScore: number;
+  bestScore: number | null;
+  attempts: number;
+  quizType: "practice" | "exam" | "revision";
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  earnedAt?: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "warning" | "reminder";
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface AIMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  avatarUrl: string;
+  role: "student" | "professor" | "admin";
+  level: number;
+  streakDays: number;
+  coursesCompleted: number;
+  quizzesPassed: number;
+  totalStudyHours: number;
+}

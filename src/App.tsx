@@ -53,7 +53,7 @@ const primaryNavItems = [
 ];
 
 const FIRST_VISIT_PANEL_KEY = "zentrix_first_visit_auth_panel_seen";
-const SESSION_KEYS = ["eduplatform_session", "auth_token", "access_token", "session_token"];
+const SESSION_KEYS = ["zentrix-academy_session", "auth_token", "access_token", "session_token"];
 
 function hasActiveSession(): boolean {
   if (typeof window === "undefined") return false;
@@ -200,7 +200,7 @@ function App() {
                   S'inscrire
                 </button>
                 <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 lg:hidden dark:border-slate-800 dark:text-slate-300"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 text-slate-600 lg:hidden dark:border-slate-800 dark:text-slate-300"
                   onClick={() => setMobileMenuOpen((v) => !v)}
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -215,7 +215,7 @@ function App() {
                     <button
                       key={item.id}
                       onClick={() => handleNavigate(item.id)}
-                      className="block w-full rounded-xl bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                      className="block w-full rounded-none bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200"
                     >
                       {item.label}
                     </button>
@@ -225,7 +225,7 @@ function App() {
                       setMobileMenuOpen(false);
                       setAiOpen(true);
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                    className="flex w-full items-center justify-center gap-2 rounded-none border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
                   >
                     <Search className="h-4 w-4" />
                     Assistant IA

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buildApiUrl } from "@/lib/env";
+import { mockCourses } from "@/lib/mock-data";
 import {
   FadeUp,
   RevealLine,
@@ -53,7 +53,7 @@ const heroSlides = [
     title: "Montez en competences. Evoluez. Avancez a votre rythme.",
     subtitle:
       "Une experience d'accueil premium avec des parcours visibles des l'entree et une transition fluide vers votre espace cours.",
-    image: "/zati/cours.jpg",
+    image: "/cours.jpg",
   },
   {
     tag: "Apprentissage tout au long de la vie",
@@ -66,8 +66,8 @@ const heroSlides = [
     tag: "Pratique. Transformateur.",
     title: "Vraies competences. Vrais projets. Vrai impact de carriere.",
     subtitle:
-      "Un accueil inspirant pour la marque, puis un acces direct a votre plateforme actuelle dans la section Cours.",
-    image: "/zati/hero-3.png",
+      "Une methode efficace d'apprentissage rapide et dans moins de temps que prevue , la conception et l'evolution des vos projets c'est maintenant",
+    image: "/etudiante.jpg",
   },
 ];
 
@@ -154,7 +154,7 @@ function normalizeCourse(raw: any, index: number): ExploreCourse {
   return {
     id: String(raw?.id ?? `course-${index}`),
     title: String(raw?.title ?? "Cours"),
-    description: String(raw?.description ?? "Description du cours non disponible."),
+    description: String(raw?.description ?? ""),
     categoryName: String(raw?.categoryName ?? raw?.category ?? "General"),
   };
 }
@@ -249,37 +249,37 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       return;
     }
 
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
+    const timer = window.setTimeout(() => {
       setExploreLoading(true);
       setExploreError("");
       setHasSearched(true);
 
-      try {
-        const response = await fetch(
-          buildApiUrl(`/api/courses?search=${encodeURIComponent(query)}&limit=4`),
-          { signal: controller.signal }
-        );
-        if (!response.ok) throw new Error("Failed to fetch courses");
-        const payload = await response.json();
-        const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.data ?? [];
-        setExploreResults((source as any[]).slice(0, 8).map(normalizeCourse));
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        setExploreResults([]);
-        setExploreError("Impossible de recuperer les cours pour le moment.");
-      } finally {
-        if (!controller.signal.aborted) setExploreLoading(false);
-      }
-    }, 350);
+      const lowered = query.toLowerCase();
+      const matches = mockCourses
+        .filter((course) => {
+          const haystack = [
+            course.title,
+            course.description,
+            course.categoryName,
+            course.tags?.join(" ") ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(lowered);
+        })
+        .slice(0, 8)
+        .map((course, index) => normalizeCourse(course, index));
+
+      setExploreResults(matches);
+      setExploreLoading(false);
+    }, 250);
 
     return () => {
-      controller.abort();
       window.clearTimeout(timer);
     };
   }, [exploreQuery]);
 
-  const runSearchNow = async () => {
+  const runSearchNow = () => {
     const query = exploreQuery.trim();
     if (!query) return;
 
@@ -287,20 +287,24 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     setExploreError("");
     setHasSearched(true);
 
-    try {
-      const response = await fetch(
-        buildApiUrl(`/api/courses?search=${encodeURIComponent(query)}&limit=4`)
-      );
-      if (!response.ok) throw new Error("Failed to fetch courses");
-      const payload = await response.json();
-      const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.data ?? [];
-      setExploreResults((source as any[]).slice(0, 8).map(normalizeCourse));
-    } catch {
-      setExploreResults([]);
-      setExploreError("Impossible de recuperer les cours pour le moment.");
-    } finally {
-      setExploreLoading(false);
-    }
+    const lowered = query.toLowerCase();
+    const matches = mockCourses
+      .filter((course) => {
+        const haystack = [
+          course.title,
+          course.description,
+          course.categoryName,
+          course.tags?.join(" ") ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(lowered);
+      })
+      .slice(0, 8)
+      .map((course, index) => normalizeCourse(course, index));
+
+    setExploreResults(matches);
+    setExploreLoading(false);
   };
 
   const heroParallaxY = Math.min(scrollY * 0.3, 180);
@@ -476,7 +480,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               </h3>
               <RevealLine className="mt-6 h-1 w-20 bg-[#FF6B00]" />
               <p className="mt-8 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-400">
-                ZATI est une plateforme majeure d'apprentissage continu en Afrique, concue pour les professionnels en
+                Zentrix Academy est une plateforme majeure d'apprentissage continu en Afrique, concue pour les professionnels en
                 activite, les personnes en reconversion et les apprenants qui veulent garder une longueur d'avance dans
                 un environnement technologique en evolution rapide.
               </p>
@@ -583,8 +587,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 {exploreLoading && (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
                     {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="rounded-2xl border border-white/15 bg-white/5 p-5">
-                        <Skeleton className="h-44 w-full rounded-xl bg-white/10" />
+                      <div key={i} className="rounded-none border border-white/15 bg-white/5 p-5">
+                        <Skeleton className="h-44 w-full rounded-none bg-white/10" />
                         <Skeleton className="mt-5 h-4 w-24 bg-white/10" />
                         <Skeleton className="mt-3 h-6 w-5/6 bg-white/10" />
                         <Skeleton className="mt-3 h-4 w-full bg-white/10" />
@@ -596,7 +600,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 )}
 
                 {!exploreLoading && exploreError && (
-                  <p className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  <p className="rounded-none border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                     {exploreError}
                   </p>
                 )}
@@ -606,7 +610,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     {exploreResults.map((course) => (
                       <article
                         key={course.id}
-                        className="rounded-2xl border border-white/15 bg-white/7 p-5 text-left transition-colors hover:border-[#FF6B00]/70"
+                        className="rounded-none border border-white/15 bg-white/7 p-5 text-left transition-colors hover:border-[#FF6B00]/70"
                       >
                         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
                           {course.categoryName}
@@ -716,10 +720,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 <h3 className="mt-3 text-2xl font-black text-[#0f0f1a] dark:text-white">
                   Un accueil visuel fort pour accueillir les visiteurs avant d’entrer dans les cours.
                 </h3>
-                <p className="mt-4 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  L’objectif est de mettre en valeur la marque, les programmes et la crédibilité, puis de laisser la
-                  navigation <strong className="text-slate-700 dark:text-slate-200">Cours</strong> ouvrir votre plateforme actuelle.
-                </p>
+
               </div>
             </ScaleIn>
 

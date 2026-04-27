@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BookOpen, ChevronLeft, ChevronRight, Clock, Search, Star, Users } from "lucide-react";
 import {
   Empty,
@@ -7,9 +7,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
 import PageHero from "@/components/ui/PageHero";
 import { type Course } from "@/lib/backend-types";
+import { mockCourses as seededCourses } from "@/lib/mock-data";
 
 interface CoursesPageProps {
   onNavigate: (page: string, data?: unknown) => void;
@@ -20,7 +20,7 @@ function isSimulationCourse(course: Course) {
   return values.some((value) => value.toLowerCase().includes("simulation"));
 }
 
-const mockCourses: Course[] = [];
+const mockCourses: Course[] = seededCourses;
 
 interface CourseOutlineChapter {
   title: string;
@@ -54,32 +54,6 @@ function buildCourseOutline(course: Course): CourseOutlineChapter[] {
   });
 }
 
-function CourseCardSkeleton() {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <Skeleton className="mb-4 h-28 w-full rounded-xl" />
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="mt-3 h-5 w-4/5" />
-      <Skeleton className="mt-2 h-4 w-full" />
-      <Skeleton className="mt-2 h-4 w-2/3" />
-      <div className="mt-4 flex flex-wrap gap-3">
-        <div className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-          <BookOpen className="h-3.5 w-3.5" />
-          <Skeleton className="h-3 w-12" />
-        </div>
-        <div className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-          <Clock className="h-3.5 w-3.5" />
-          <Skeleton className="h-3 w-12" />
-        </div>
-        <div className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
-          <Users className="h-3.5 w-3.5" />
-          <Skeleton className="h-3 w-12" />
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function CourseCard({
   course,
   onSelect,
@@ -98,9 +72,9 @@ function CourseCard({
   return (
     <article
       onClick={() => onSelect(course)}
-      className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
+      className="cursor-pointer rounded-none border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-950"
     >
-      <div className="mb-4 flex h-28 w-full items-end rounded-xl bg-gradient-to-br from-[#FFB347] via-[#FF9A3C] to-[#FF6B00] p-4 text-white">
+      <div className="mb-4 flex h-28 w-full items-end rounded-none bg-gradient-to-br from-[#FFB347] via-[#FF9A3C] to-[#FF6B00] p-4 text-white">
         <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
           {course.categoryName}
         </span>
@@ -159,17 +133,9 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [level, setLevel] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedCoursePreview, setSelectedCoursePreview] = useState<Course | null>(null);
   const [isOutlineOpen, setIsOutlineOpen] = useState(true);
   const [mobileOutlineOpen, setMobileOutlineOpen] = useState(false);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timeout = window.setTimeout(() => setIsLoading(false), 3000);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeTab]);
 
   const categories = useMemo(
     () => Array.from(new Set(mockCourses.map((course) => course.categoryName))),
@@ -234,12 +200,12 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
   };
 
   const outlineBody = !selectedCoursePreview ? (
-    <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+    <div className="mt-4 rounded-none border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
       Choisissez un cours pour afficher son plan ici.
     </div>
   ) : (
     <div className="mt-4 space-y-3">
-      <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-none border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
         <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
           Cours selectionne
         </p>
@@ -251,7 +217,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
       {selectedOutline.map((chapter, index) => (
         <div
           key={`${chapter.title}-${index}`}
-          className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-none border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B00] dark:text-orange-400">
             {chapter.title}
@@ -275,10 +241,11 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
   return (
     <div className="w-full space-y-6 bg-white p-4 sm:p-6 dark:bg-slate-900">
       <PageHero
+        eyebrow="Catalogue Zentrix"
         title="Tous les cours"
-        subtitle="Explorez nos formations et démarrez votre parcours d'apprentissage dès aujourd'hui"
-        backgroundImage="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&h=400&fit=crop"
-        icon={<BookOpen className="h-8 w-8" />}
+        subtitle="Explorez nos formations et démarrez votre parcours d'apprentissage dès aujourd'hui."
+        backgroundImage="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1600&h=600&fit=crop"
+        icon={<BookOpen className="h-7 w-7" />}
       />
 
       <div className={`fixed inset-0 z-50 lg:hidden ${mobileOutlineOpen ? "" : "pointer-events-none"}`}>
@@ -313,7 +280,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
 
       <div className={`grid gap-6 transition-all duration-300 ${isOutlineOpen ? "lg:grid-cols-[340px_1fr]" : "lg:grid-cols-[56px_1fr]"}`}>
         <aside className="hidden h-fit lg:sticky lg:top-24 lg:block">
-          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+          <section className="rounded-none border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               {isOutlineOpen ? (
               <div>
@@ -382,13 +349,13 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={activeTab === "all" ? "Rechercher un cours..." : "Rechercher dans mes cours..."}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                className="w-full rounded-none border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
               />
             </div>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+              className="rounded-none border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
             >
               <option value="all">Toutes les categories</option>
               {categories.map((categoryName) => (
@@ -400,7 +367,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+              className="rounded-none border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
             >
               <option value="all">Tous les niveaux</option>
               <option value="beginner">Debutant</option>
@@ -409,7 +376,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
             </select>
             <button
               onClick={resetFilters}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+              className="rounded-none border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
             >
               Reinitialiser
             </button>
@@ -431,27 +398,19 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
             <section>
               <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">Cours en vedette</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {isLoading
-                  ? [0, 1, 2, 3].map((item) => <CourseCardSkeleton key={item} />)
-                  : featuredCourses.map((course) => (
-                      <CourseCard
-                        key={course.id}
-                        course={course}
-                        onSelect={setSelectedCoursePreview}
-                        onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
-                      />
-                    ))}
+                {featuredCourses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    onSelect={setSelectedCoursePreview}
+                    onOpen={(selectedCourse) => onNavigate("course-detail", selectedCourse)}
+                  />
+                ))}
               </div>
             </section>
           )}
 
-          {isLoading ? (
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {(activeTab === "all" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map((item) => (
-                <CourseCardSkeleton key={item} />
-              ))}
-            </section>
-          ) : regularCourses.length > 0 ? (
+          {regularCourses.length > 0 ? (
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {regularCourses.map((course) => (
                 <CourseCard
@@ -463,14 +422,14 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
               ))}
             </section>
           ) : (
-            <Empty className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+            <Empty className="rounded-none border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <Search className="h-5 w-5" />
                 </EmptyMedia>
-                <EmptyTitle>Aucun cours trouve</EmptyTitle>
+                <EmptyTitle>Aucun cours trouvé</EmptyTitle>
                 <EmptyDescription>
-                  Aucun cours n'est disponible pour le moment. Revenez un peu plus tard.
+                  Essayez d'élargir votre recherche ou de retirer un filtre.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

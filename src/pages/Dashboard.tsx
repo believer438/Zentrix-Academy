@@ -123,9 +123,9 @@ const tracks = [
 ];
 
 const highlights = [
-  "Un accueil inspire des plateformes academiques premium",
-  "Des parcours clairs, structurés et faciles a reprendre",
-  "Une bibliotheque, des quiz et un assistant IA dans le meme espace",
+  "Des parcours professionnalisants construits autour de competences directement applicables.",
+  "Une progression guidee, avec ressources, pratique et evaluation a chaque etape.",
+  "Un environnement unique pour apprendre, reviser, consulter des ressources et avancer avec confiance.",
 ];
 
 const news = [
@@ -337,7 +337,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 willChange: "opacity, transform",
               }}
             >
-              <img src={previousHeroSlide.image} alt={previousHeroSlide.title} className="h-full w-full object-cover" />
+              <img src={previousHeroSlide.image} alt={previousHeroSlide.title} className="h-full w-full object-cover object-right" />
             </div>
           )}
 
@@ -354,10 +354,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               willChange: "opacity, transform",
             }}
           >
-            <img src={currentHeroSlide.image} alt={currentHeroSlide.title} className="h-full w-full object-cover" />
+            <img src={currentHeroSlide.image} alt={currentHeroSlide.title} className="h-full w-full object-cover object-right" />
           </div>
         </div>
-        <div className="absolute inset-0 bg-[#070b14]/80" />
+        <div className="absolute inset-0 bg-[#070b14]/76" />
+        <div className="absolute inset-y-0 right-0 hidden w-[44%] bg-[linear-gradient(270deg,rgba(255,255,255,0.48)_0%,rgba(255,255,255,0.18)_36%,transparent_100%)] mix-blend-screen lg:block" />
+        <div className="absolute inset-y-0 right-0 hidden w-[34%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.28),transparent_72%)] lg:block" />
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -371,86 +373,115 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,0,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.18),transparent_30%)]" />
 
         <div
-          className="relative mx-auto flex min-h-[78vh] max-w-7xl items-center px-4 py-14 sm:px-8 lg:py-16"
+          className="relative mx-auto flex min-h-[78vh] max-w-7xl items-center px-4 py-14 sm:px-8 lg:max-w-[88rem] lg:py-16"
           style={{ opacity: heroContentOpacity }}
         >
-          <div className="w-full max-w-5xl">
-            <div className="relative min-h-[500px] sm:min-h-[470px] lg:min-h-[450px]">
-              {isSlideTransitioning && previousHeroSlide && (
-                <div
-                  className="absolute inset-0 z-[1]"
-                  style={{
-                    opacity: heroAnimationReady ? 0 : 1,
-                    transform: heroAnimationReady ? "translate3d(0,-20px,0)" : "translate3d(0,0,0)",
-                    transition: `opacity 520ms ${HERO_EASE}, transform 520ms ${HERO_EASE}`,
-                  }}
-                >
-                  <div className="flex items-center gap-3">
+          <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)]">
+            <div className="w-full max-w-4xl">
+              <div className="relative min-h-[500px] sm:min-h-[470px] lg:min-h-[450px]">
+                {isSlideTransitioning && previousHeroSlide && (
+                  <div
+                    className="absolute inset-0 z-[1]"
+                    style={{
+                      opacity: heroAnimationReady ? 0 : 1,
+                      transform: heroAnimationReady ? "translate3d(0,-20px,0)" : "translate3d(0,0,0)",
+                      transition: `opacity 520ms ${HERO_EASE}, transform 520ms ${HERO_EASE}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-px w-10 bg-[#FF6B00]" />
+                      <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
+                        {previousHeroSlide.tag}
+                      </span>
+                    </div>
+
+                    <h1 className="mt-8 max-w-[20ch] text-[2.6rem] font-black leading-[1.08] tracking-tight sm:text-[3.35rem] lg:text-[4rem]">
+                      {previousHeroSlide.title}
+                    </h1>
+                    <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+                      {previousHeroSlide.subtitle}
+                    </p>
+                  </div>
+                )}
+
+                <div className="absolute inset-0 z-[2]">
+                  <div className="flex items-center gap-3" style={sequenceStyle(120)}>
                     <div className="h-px w-10 bg-[#FF6B00]" />
                     <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
-                      {previousHeroSlide.tag}
+                      {currentHeroSlide.tag}
                     </span>
                   </div>
 
-                  <h1 className="mt-8 max-w-[20ch] text-[2.6rem] font-black leading-[1.08] tracking-tight sm:text-[3.35rem] lg:text-[4rem]">
-                    {previousHeroSlide.title}
+                  <h1
+                    className="mt-8 max-w-[20ch] text-[2.45rem] font-black leading-[1.04] tracking-tight sm:text-[3.15rem] lg:text-[4rem]"
+                    style={sequenceStyle(220)}
+                  >
+                    {currentHeroSlide.title}
                   </h1>
-                  <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-                    {previousHeroSlide.subtitle}
+                  <p className="mt-6 max-w-2xl text-[15px] leading-7 text-slate-200 sm:text-[1.02rem]" style={sequenceStyle(360)}>
+                    {currentHeroSlide.subtitle}
                   </p>
+
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row" style={sequenceStyle(500)}>
+                    <button
+                      onClick={() => onNavigate("courses")}
+                      className="inline-flex items-center justify-center gap-2 bg-[#FF6B00] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-[#e56000]"
+                    >
+                      Ouvrir les cours
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onNavigate("document-ai")}
+                      className="inline-flex items-center justify-center gap-2 border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
+                    >
+                      Document IA
+                    </button>
+                  </div>
+
                 </div>
-              )}
+              </div>
 
-              <div className="absolute inset-0 z-[2]">
-                <div className="flex items-center gap-3" style={sequenceStyle(120)}>
-                  <div className="h-px w-10 bg-[#FF6B00]" />
-                  <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
-                    {currentHeroSlide.tag}
-                  </span>
-                </div>
-
-                <h1
-                  className="mt-8 max-w-[20ch] text-[2.45rem] font-black leading-[1.08] tracking-tight sm:text-[3.15rem] lg:text-[3.75rem]"
-                  style={sequenceStyle(220)}
-                >
-                  {currentHeroSlide.title}
-                </h1>
-                <p className="mt-6 max-w-2xl text-[15px] leading-7 text-slate-300 sm:text-[1.02rem]" style={sequenceStyle(360)}>
-                  {currentHeroSlide.subtitle}
-                </p>
-
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row" style={sequenceStyle(500)}>
+              <div className="mt-10 flex items-center gap-3">
+                {heroSlides.map((slide, i) => (
                   <button
-                    onClick={() => onNavigate("courses")}
-                    className="inline-flex items-center justify-center gap-2 bg-[#FF6B00] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-[#e56000]"
-                  >
-                    Ouvrir les cours
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onNavigate("document-ai")}
-                    className="inline-flex items-center justify-center gap-2 border border-white/20 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
-                  >
-                    Document IA
-                  </button>
-                </div>
+                    key={slide.tag}
+                    onClick={() => changeSlide(i)}
+                    className={`h-1.5 transition-all duration-300 ${
+                      i === activeSlide ? "w-10 bg-[#FF6B00]" : "w-4 bg-white/35 hover:bg-white/60"
+                    }`}
+                    aria-label={`Diapositive ${i + 1}`}
+                  />
+                ))}
+                <span className="ml-2 text-xs font-mono text-white/50">
+                  0{activeSlide + 1} / 0{heroSlides.length}
+                </span>
               </div>
             </div>
 
-            <div className="mt-10 flex items-center gap-3">
-              {heroSlides.map((slide, i) => (
-                <button
-                  key={slide.tag}
-                  onClick={() => changeSlide(i)}
-                  className={`h-1.5 transition-all duration-300 ${
-                    i === activeSlide ? "w-10 bg-[#FF6B00]" : "w-4 bg-white/35 hover:bg-white/60"
-                  }`}
-                  aria-label={`Diapositive ${i + 1}`}
-                />
-              ))}
-              <span className="ml-2 text-xs font-mono text-white/50">
-                0{activeSlide + 1} / 0{heroSlides.length}
-              </span>
+            <div className="relative hidden lg:block">
+              <div className="relative overflow-hidden border border-white/12 bg-white/6 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-md">
+                <div className="relative h-[520px] overflow-hidden bg-slate-900">
+                  <img
+                    src={currentHeroSlide.image}
+                    alt={currentHeroSlide.title}
+                    className="h-full w-full object-cover object-right transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#08101c]/58 via-transparent to-white/18" />
+                  <div className="absolute inset-y-0 right-0 w-[58%] bg-[linear-gradient(270deg,rgba(255,255,255,0.56)_0%,rgba(255,255,255,0.22)_42%,transparent_100%)] mix-blend-screen" />
+                  <div className="absolute inset-y-0 right-0 w-[44%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.34),transparent_74%)]" />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07101d] via-[#07101d]/68 to-transparent p-6">
+                    <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#FFB347]">
+                      Zentrix Academy
+                    </p>
+                    <h3 className="mt-3 max-w-[20ch] text-2xl font-black leading-tight text-white">
+                      Des parcours de formation pensés pour developper des competences solides et evolutives.
+                    </h3>
+                    <p className="mt-3 max-w-md text-sm leading-6 text-slate-200">
+                      Explorez une plateforme concue pour accompagner les apprenants, les professionnels et les talents en reconversion vers des resultats concrets.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -701,7 +732,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               <div className="h-px w-10 bg-[#FF6B00]" />
               <span className="text-xs font-bold uppercase tracking-[0.32em] text-[#FF6B00]">Points forts</span>
             </div>
-            <h2 className="mt-5 text-3xl font-black">Un accueil type institution, sans perdre votre produit.</h2>
+            <h2 className="mt-5 text-3xl font-black">Une plateforme de formation claire, ambitieuse et orientee resultats.</h2>
             <div className="mt-8 space-y-4">
               {highlights.map((item) => (
                 <div key={item} className="flex items-start gap-3 border border-white/10 bg-white/5 p-4">
@@ -714,13 +745,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           <SlideInRight delay={0.15} className="grid gap-6">
             <ScaleIn className="overflow-hidden border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#11141d]">
-              <img src="/zati/hero-2.avif" alt="Programmes" className="h-64 w-full object-cover" />
+              <div className="relative">
+                <img src="/zati/hero-2.avif" alt="Programmes" className="h-64 w-full object-cover object-right" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/38 via-transparent to-white/18" />
+                <div className="absolute inset-y-0 right-0 w-[42%] bg-[linear-gradient(270deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.12)_42%,transparent_100%)] mix-blend-screen" />
+              </div>
               <div className="p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF6B00]">Apercu de la plateforme</p>
                 <h3 className="mt-3 text-2xl font-black text-[#0f0f1a] dark:text-white">
-                  Un accueil visuel fort pour accueillir les visiteurs avant d’entrer dans les cours.
+                  Un accueil visuel fort pour accueillir les visiteurs avant d'entrer dans les cours.
                 </h3>
-
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-400">
+                  Nous donnons plus de clarte au visuel principal, une meilleure hierarchie aux messages et un rendu plus rassurant pour un premier passage sur le site.
+                </p>
               </div>
             </ScaleIn>
 

@@ -16,7 +16,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mockCourses } from "@/lib/mock-data";
 import {
@@ -147,7 +147,7 @@ const popularTags = [
   "TechBootcamp",
   "DeveloppementFullStack",
   "MERNStack",
-  "UgandaTech",
+  "InnovationTech",
 ];
 
 function normalizeCourse(raw: any, index: number): ExploreCourse {
@@ -161,67 +161,28 @@ function normalizeCourse(raw: any, index: number): ExploreCourse {
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [previousSlide, setPreviousSlide] = useState<number | null>(null);
-  const [isSlideTransitioning, setIsSlideTransitioning] = useState(false);
-  const [heroAnimationReady, setHeroAnimationReady] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [exploreQuery, setExploreQuery] = useState("");
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreResults, setExploreResults] = useState<ExploreCourse[]>([]);
   const [exploreError, setExploreError] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
-  const heroTimeoutRef = useRef<number | null>(null);
-  const heroRafRef = useRef<number | null>(null);
-  const activeSlideRef = useRef(0);
-  const isSlideTransitioningRef = useRef(false);
-  const HERO_TRANSITION_MS = 900;
-  const HERO_AUTOPLAY_MS = 8000;
-  const HERO_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+  const HERO_AUTOPLAY_MS = 6000;
 
   const changeSlide = (next: number) => {
-    const current = activeSlideRef.current;
-    if (next === current || isSlideTransitioningRef.current) return;
-
-    if (heroTimeoutRef.current) window.clearTimeout(heroTimeoutRef.current);
-    if (heroRafRef.current) window.cancelAnimationFrame(heroRafRef.current);
-
-    setPreviousSlide(current);
-    setActiveSlide(next);
-    setIsSlideTransitioning(true);
-    activeSlideRef.current = next;
-    isSlideTransitioningRef.current = true;
-    setHeroAnimationReady(false);
-
-    heroRafRef.current = window.requestAnimationFrame(() => {
-      heroRafRef.current = window.requestAnimationFrame(() => {
-        setHeroAnimationReady(true);
-      });
+    setActiveSlide((current) => {
+      if (next === current) return current;
+      return next;
     });
-
-    heroTimeoutRef.current = window.setTimeout(() => {
-      setIsSlideTransitioning(false);
-      setPreviousSlide(null);
-      setHeroAnimationReady(false);
-      isSlideTransitioningRef.current = false;
-    }, HERO_TRANSITION_MS);
   };
 
   useEffect(() => {
-    activeSlideRef.current = activeSlide;
-  }, [activeSlide]);
-
-  useEffect(() => {
-    isSlideTransitioningRef.current = isSlideTransitioning;
-  }, [isSlideTransitioning]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const next = (activeSlideRef.current + 1) % heroSlides.length;
-      changeSlide(next);
+    const timer = window.setTimeout(() => {
+      setActiveSlide((current) => (current + 1) % heroSlides.length);
     }, HERO_AUTOPLAY_MS);
 
-    return () => window.clearInterval(timer);
-  }, []);
+    return () => window.clearTimeout(timer);
+  }, [activeSlide]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -230,13 +191,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (heroTimeoutRef.current) window.clearTimeout(heroTimeoutRef.current);
-      if (heroRafRef.current) window.cancelAnimationFrame(heroRafRef.current);
-    };
   }, []);
 
   useEffect(() => {
@@ -310,52 +264,23 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const heroParallaxY = Math.min(scrollY * 0.3, 180);
   const heroContentOpacity = Math.max(0, 1 - scrollY / 500);
   const currentHeroSlide = heroSlides[activeSlide];
-  const previousHeroSlide = previousSlide !== null ? heroSlides[previousSlide] : null;
-  const sequenceStyle = (delayMs: number): CSSProperties => {
-    if (!isSlideTransitioning) return { opacity: 1, transform: "translate3d(0,0,0)" };
-    if (!heroAnimationReady) return { opacity: 0, transform: "translate3d(0,24px,0)" };
-    return {
-      opacity: 1,
-      transform: "translate3d(0,0,0)",
-      transition: `opacity 700ms ${HERO_EASE} ${delayMs}ms, transform 700ms ${HERO_EASE} ${delayMs}ms`,
-    };
-  };
 
   return (
     <div className="min-h-full bg-white dark:bg-[#0b0d14]">
       <section className="relative min-h-[78vh] overflow-hidden bg-[#0f0f1a] text-white">
         <div className="absolute inset-0 overflow-hidden" style={{ transform: `translate3d(0, ${heroParallaxY}px, 0)` }}>
-          {isSlideTransitioning && previousHeroSlide && (
+          {heroSlides.map((slide, index) => (
             <div
-              className="absolute inset-0"
+              key={slide.image}
+              className="absolute inset-0 transition-all duration-1000 ease-out"
               style={{
-                opacity: heroAnimationReady ? 0 : 1,
-                transform: heroAnimationReady
-                  ? "translate3d(0,-22px,0) scale(1.04)"
-                  : "translate3d(0,0,0) scale(1)",
-                transition: `opacity ${HERO_TRANSITION_MS}ms ${HERO_EASE}, transform ${HERO_TRANSITION_MS}ms ${HERO_EASE}`,
-                willChange: "opacity, transform",
+                opacity: index === activeSlide ? 1 : 0,
+                transform: index === activeSlide ? "scale(1)" : "scale(1.04)",
               }}
             >
-              <img src={previousHeroSlide.image} alt={previousHeroSlide.title} className="h-full w-full object-cover object-right" />
+              <img src={slide.image} alt={slide.title} className="h-full w-full object-cover object-right" />
             </div>
-          )}
-
-          <div
-            className="absolute inset-0"
-            style={{
-              opacity: isSlideTransitioning ? (heroAnimationReady ? 1 : 0) : 1,
-              transform: isSlideTransitioning
-                ? heroAnimationReady
-                  ? "translate3d(0,0,0) scale(1)"
-                  : "translate3d(0,36px,0) scale(1.06)"
-                : "translate3d(0,0,0) scale(1)",
-              transition: `opacity ${HERO_TRANSITION_MS}ms ${HERO_EASE}, transform ${HERO_TRANSITION_MS}ms ${HERO_EASE}`,
-              willChange: "opacity, transform",
-            }}
-          >
-            <img src={currentHeroSlide.image} alt={currentHeroSlide.title} className="h-full w-full object-cover object-right" />
-          </div>
+          ))}
         </div>
         <div className="absolute inset-0 bg-[#070b14]/76" />
         <div className="absolute inset-y-0 right-0 hidden w-[44%] bg-[linear-gradient(270deg,rgba(255,255,255,0.48)_0%,rgba(255,255,255,0.18)_36%,transparent_100%)] mix-blend-screen lg:block" />
@@ -379,50 +304,22 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           <div className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)]">
             <div className="w-full max-w-4xl">
               <div className="relative min-h-[500px] sm:min-h-[470px] lg:min-h-[450px]">
-                {isSlideTransitioning && previousHeroSlide && (
-                  <div
-                    className="absolute inset-0 z-[1]"
-                    style={{
-                      opacity: heroAnimationReady ? 0 : 1,
-                      transform: heroAnimationReady ? "translate3d(0,-20px,0)" : "translate3d(0,0,0)",
-                      transition: `opacity 520ms ${HERO_EASE}, transform 520ms ${HERO_EASE}`,
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-px w-10 bg-[#FF6B00]" />
-                      <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
-                        {previousHeroSlide.tag}
-                      </span>
-                    </div>
-
-                    <h1 className="mt-8 max-w-[20ch] text-[2.6rem] font-black leading-[1.08] tracking-tight sm:text-[3.35rem] lg:text-[4rem]">
-                      {previousHeroSlide.title}
-                    </h1>
-                    <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-                      {previousHeroSlide.subtitle}
-                    </p>
-                  </div>
-                )}
-
-                <div className="absolute inset-0 z-[2]">
-                  <div className="flex items-center gap-3" style={sequenceStyle(120)}>
+                <div key={activeSlide} className="absolute inset-0 z-[2]">
+                  <div className="flex items-center gap-3">
                     <div className="h-px w-10 bg-[#FF6B00]" />
                     <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#FF6B00]">
                       {currentHeroSlide.tag}
                     </span>
                   </div>
 
-                  <h1
-                    className="mt-8 max-w-[20ch] text-[2.45rem] font-black leading-[1.04] tracking-tight sm:text-[3.15rem] lg:text-[4rem]"
-                    style={sequenceStyle(220)}
-                  >
+                  <h1 className="mt-8 max-w-[20ch] text-[2.45rem] font-black leading-[1.04] tracking-tight sm:text-[3.15rem] lg:text-[4rem]">
                     {currentHeroSlide.title}
                   </h1>
-                  <p className="mt-6 max-w-2xl text-[15px] leading-7 text-slate-200 sm:text-[1.02rem]" style={sequenceStyle(360)}>
+                  <p className="mt-6 max-w-2xl text-[15px] leading-7 text-slate-200 sm:text-[1.02rem]">
                     {currentHeroSlide.subtitle}
                   </p>
 
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row" style={sequenceStyle(500)}>
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => onNavigate("courses")}
                       className="inline-flex items-center justify-center gap-2 bg-[#FF6B00] px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-[#e56000]"
@@ -461,23 +358,24 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="relative hidden lg:block">
               <div className="relative overflow-hidden border border-white/12 bg-white/6 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-md">
                 <div className="relative h-[520px] overflow-hidden bg-slate-900">
-                  <img
-                    src={currentHeroSlide.image}
-                    alt={currentHeroSlide.title}
-                    className="h-full w-full object-cover object-right transition-transform duration-700"
-                  />
+                  {heroSlides.map((slide, index) => (
+                    <img
+                      key={slide.image}
+                      src={slide.image}
+                      alt={slide.title}
+                      className="absolute inset-0 h-full w-full object-cover object-right transition-all duration-1000 ease-out"
+                      style={{
+                        opacity: index === activeSlide ? 1 : 0,
+                        transform: index === activeSlide ? "scale(1)" : "scale(1.03)",
+                      }}
+                    />
+                  ))}
                   <div className="absolute inset-0 bg-gradient-to-r from-[#08101c]/58 via-transparent to-white/18" />
                   <div className="absolute inset-y-0 right-0 w-[58%] bg-[linear-gradient(270deg,rgba(255,255,255,0.56)_0%,rgba(255,255,255,0.22)_42%,transparent_100%)] mix-blend-screen" />
                   <div className="absolute inset-y-0 right-0 w-[44%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.34),transparent_74%)]" />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#07101d] via-[#07101d]/68 to-transparent p-6">
                     <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#FFB347]">
                       Zentrix Academy
-                    </p>
-                    <h3 className="mt-3 max-w-[20ch] text-2xl font-black leading-tight text-white">
-                      Des parcours de formation pensés pour developper des competences solides et evolutives.
-                    </h3>
-                    <p className="mt-3 max-w-md text-sm leading-6 text-slate-200">
-                      Explorez une plateforme concue pour accompagner les apprenants, les professionnels et les talents en reconversion vers des resultats concrets.
                     </p>
                   </div>
                 </div>
@@ -507,11 +405,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#FF6B00]">A propos</p>
               <h2 className="mt-4 text-3xl font-black leading-tight text-[#0f0f1a] dark:text-white">Apprentissage continu</h2>
               <h3 className="mt-1 text-3xl font-black leading-tight text-[#0f0f1a] dark:text-white">
-                Concu pour les professionnels africains
+                Concu pour les professionnels ambitieux
               </h3>
               <RevealLine className="mt-6 h-1 w-20 bg-[#FF6B00]" />
               <p className="mt-8 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-400">
-                Zentrix Academy est une plateforme majeure d'apprentissage continu en Afrique, concue pour les professionnels en
+                Zentrix Academy est une plateforme majeure d'apprentissage continu, concue pour les professionnels en
                 activite, les personnes en reconversion et les apprenants qui veulent garder une longueur d'avance dans
                 un environnement technologique en evolution rapide.
               </p>
@@ -753,7 +651,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               <div className="p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF6B00]">Apercu de la plateforme</p>
                 <h3 className="mt-3 text-2xl font-black text-[#0f0f1a] dark:text-white">
-                  Un accueil visuel fort pour accueillir les visiteurs avant d'entrer dans les cours.
+                  Une presentation claire et engageante pour valoriser la plateforme des le premier regard.
                 </h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-400">
                   Nous donnons plus de clarte au visuel principal, une meilleure hierarchie aux messages et un rendu plus rassurant pour un premier passage sur le site.

@@ -23,15 +23,12 @@ export default function PageHero({
       style={{
         backgroundImage: `url('${backgroundImage}')`,
         backgroundSize: "cover",
-        backgroundPosition: "center right",
+        backgroundPosition: "center",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/96 via-slate-950/78 to-slate-900/18" />
-      <div className="absolute inset-y-0 right-0 hidden w-[46%] bg-[linear-gradient(270deg,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0.16)_38%,transparent_100%)] mix-blend-screen lg:block" />
-      <div className="absolute inset-y-0 right-0 hidden w-[34%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.32),transparent_72%)] lg:block" />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/40" />
       <div className="absolute inset-y-0 left-0 w-1.5 bg-[#FF6B00]" />
       <div className="pointer-events-none absolute -bottom-24 -right-10 h-72 w-72 rounded-full bg-[#FF6B00]/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-8 top-8 hidden h-24 w-24 rounded-full border border-white/20 bg-white/10 blur-2xl lg:block" />
 
       <div className="relative mx-auto flex max-w-7xl flex-col justify-center px-6 py-14 md:py-16 lg:max-w-[88rem] lg:py-20">
         {eyebrow && (

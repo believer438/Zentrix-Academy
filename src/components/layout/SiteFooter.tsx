@@ -54,15 +54,15 @@ export default function SiteFooter() {
           <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
             <div>
               <div className="flex items-center gap-3">
-                <img src="/zentrix.avif" alt="Zentrix Africa" className="h-14 w-14 object-contain" />
+                <img src="/zentrix.avif" alt="Zentrix" className="h-14 w-14 object-contain" />
                 <div>
-                  <p className="text-base font-black uppercase tracking-[0.07em]">Zentrix Africa</p>
+                  <p className="text-base font-black uppercase tracking-[0.07em]">Zentrix</p>
                   <p className="text-xs text-[#7f8aac]">Technology Institute</p>
                 </div>
               </div>
 
               <p className="mt-6 max-w-md text-[14px] leading-[1.7] text-[#7f8aac]">
-                Zentrix is Africa's leading continuous learning platform empowering professionals and learners to grow their
+                Zentrix is a leading continuous learning platform empowering professionals and learners to grow their
                 skills, advance their careers, and thrive in the digital economy.
               </p>
 
@@ -115,7 +115,7 @@ export default function SiteFooter() {
                   <p>
                     RDC, Republique Democratique du Congo
                     <br />
-                    Online Campus - Africa Wide
+                    Online Campus
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -124,7 +124,7 @@ export default function SiteFooter() {
                 </div>
                 <div className="flex items-center gap-4">
                   <Mail className="h-5 w-5 text-[#FF6B00]" />
-                  <p>info@zentrix.africa</p>
+                  <p>info@zentrix.com</p>
                 </div>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function SiteFooter() {
 
           <div className="mt-10 border-t border-white/10 pt-6">
             <div className="flex flex-col gap-3 text-[13px] text-[#617098] sm:flex-row sm:items-center sm:justify-between">
-              <p>© 2026 Zentrix Africa Technology Institute (Zentrix). All Rights Reserved.</p>
+              <p>© 2026 Zentrix Technology Institute. All Rights Reserved.</p>
               <div className="flex items-center gap-8">
                 <button className="transition-colors hover:text-[#FF6B00]">Privacy Policy</button>
                 <button className="transition-colors hover:text-[#FF6B00]">Terms of Service</button>

@@ -1,20 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  LayoutDashboard,
-  BookOpen,
-  Library,
-  HelpCircle,
-  FileUp,
-  Bell,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Brain,
-  BarChart3,
-  StickyNote,
-  Repeat,
-  X,
+  LayoutDashboard, BookOpen, Library, HelpCircle, FileUp, Bell,
+  Settings, ChevronLeft, ChevronRight, Brain, BarChart3, StickyNote,
+  Repeat, X,
 } from "lucide-react";
+import { apiGetMe, isAuthenticated } from "@/lib/api-client";
 
 interface SidebarProps {
   currentPage: string;
@@ -25,23 +15,39 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { id: "courses", label: "Mes Cours", icon: BookOpen },
-  { id: "document-ai", label: "Document IA", icon: FileUp },
-  { id: "library", label: "Bibliotheque", icon: Library },
-  { id: "quizzes", label: "Quiz & Examens", icon: HelpCircle },
-  { id: "revision", label: "Revision", icon: Repeat },
-  { id: "notes", label: "Mes Notes", icon: StickyNote },
-  { id: "analytics", label: "Statistiques", icon: BarChart3 },
+  { id: "dashboard",    label: "Tableau de bord", icon: LayoutDashboard },
+  { id: "courses",      label: "Mes Cours",        icon: BookOpen },
+  { id: "document-ai",  label: "Document IA",      icon: FileUp },
+  { id: "library",      label: "Bibliothèque",     icon: Library },
+  { id: "quizzes",      label: "Quiz & Examens",   icon: HelpCircle },
+  { id: "revision",     label: "Révision",         icon: Repeat },
+  { id: "notes",        label: "Mes Notes",        icon: StickyNote },
+  { id: "analytics",   label: "Statistiques",     icon: BarChart3 },
 ];
 
 const bottomItems = [
   { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "settings", label: "Parametres", icon: Settings },
+  { id: "settings",      label: "Paramètres",    icon: Settings },
 ];
 
 export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    apiGetMe()
+      .then((u) => {
+        setUserName(u.full_name ?? u.email.split("@")[0]);
+        setUserEmail(u.email);
+      })
+      .catch(() => {});
+  }, []);
+
+  const initials = userName
+    ? userName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
 
   return (
     <div
@@ -57,23 +63,26 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
       <div className="flex items-center gap-3 px-3 py-3.5 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
         {!collapsed ? (
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-              U
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFB347] to-[#FF6B00] flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+              {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">Utilisateur</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">bienvenue</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {userName ?? "Utilisateur"}
+              </p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                {userEmail ?? "bienvenue"}
+              </p>
             </div>
           </div>
         ) : (
           <div className="flex-1 flex justify-center">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
-              U
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FFB347] to-[#FF6B00] flex items-center justify-center text-sm font-bold text-white">
+              {initials}
             </div>
           </div>
         )}
 
-        {/* Desktop collapse toggle — always visible */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={`
@@ -83,15 +92,11 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
             flex-shrink-0
             ${collapsed ? "mx-auto" : ""}
           `}
-          title={collapsed ? "Agrandir" : "Reduire"}
+          title={collapsed ? "Agrandir" : "Réduire"}
         >
-          {collapsed
-            ? <ChevronRight className="w-4 h-4" />
-            : <ChevronLeft className="w-4 h-4" />
-          }
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        {/* Mobile close button */}
         {onClose && !collapsed && (
           <button
             onClick={onClose}
@@ -122,16 +127,16 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
                   w-full flex items-center rounded-none transition-all text-sm
                   ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
                   ${isActive
-                    ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold"
+                    ? "bg-orange-50 dark:bg-[#FF6B00]/10 text-[#FF6B00] dark:text-[#FFB347] font-semibold"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
                   }
                 `}
               >
-                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-blue-600 dark:text-blue-400" : ""}`} />
+                <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-[#FF6B00]" : ""}`} />
                 {!collapsed && (
                   <>
                     <span className="flex-1 text-left">{item.label}</span>
-                    {isActive && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+                    {isActive && <div className="w-1.5 h-1.5 bg-[#FF6B00] rounded-full" />}
                   </>
                 )}
               </button>
@@ -154,16 +159,16 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
                 w-full flex items-center rounded-none transition-all text-sm relative
                 ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
                 ${isActive
-                  ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold"
+                  ? "bg-orange-50 dark:bg-[#FF6B00]/10 text-[#FF6B00] dark:text-[#FFB347] font-semibold"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
                 }
               `}
             >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-blue-600 dark:text-blue-400" : ""}`} />
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-[#FF6B00]" : ""}`} />
               {!collapsed && <span>{item.label}</span>}
               {item.id === "notifications" && unreadNotifs > 0 && (
                 <span
-                  className={`flex items-center justify-center font-bold text-white rounded-full text-[9px]`}
+                  className="flex items-center justify-center font-bold text-white rounded-full text-[9px]"
                   style={{
                     position: "absolute",
                     width: 16, height: 16,
@@ -179,7 +184,6 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
           );
         })}
 
-        {/* AI Button */}
         <button
           onClick={() => onNavigate("ai-chat")}
           title={collapsed ? "Assistant IA" : undefined}
@@ -188,7 +192,7 @@ export default function Sidebar({ currentPage, onNavigate, unreadNotifs, onClose
             transition-all hover:opacity-90 active:scale-95
             ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"}
           `}
-          style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}
+          style={{ background: "linear-gradient(135deg,#FF6B00,#FFB347)" }}
         >
           <Brain className="w-[18px] h-[18px] flex-shrink-0" />
           {!collapsed && <span>Assistant IA</span>}

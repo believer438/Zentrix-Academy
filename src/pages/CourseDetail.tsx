@@ -1,28 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
-  ArrowLeft,
-  BookOpen,
-  Brain,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Circle,
-  Clock,
-  FileText,
-  Lock,
-  PanelLeftOpen,
-  Play,
-  Sparkles,
-  Star,
-  Users,
-  Video,
+  ArrowLeft, ArrowRight, BookOpen, Brain, CheckCircle2,
+  ChevronLeft, Clock, GraduationCap, Loader2, Menu, Play,
+  Sparkles, Star, Users, Video, X,
 } from "lucide-react";
 import { type Course } from "@/lib/backend-types";
-import {
-  buildChaptersForCourse,
-  buildLessonSegments,
-  type LessonSegment,
-} from "@/lib/mock-data";
+import { type BackendChapter, apiGetCourseChapters, apiUpdateCatalogueProgress, isAuthenticated } from "@/lib/api-client";
+import { buildLessonSegments, type LessonSegment } from "@/lib/mock-data";
+import { useAITracking } from "@/hooks/useAITracking";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
 
 interface CourseDetailProps {
   course: Course;
@@ -30,408 +16,666 @@ interface CourseDetailProps {
   onOpenAI: () => void;
 }
 
+type Slide =
+  | { kind: "cover" }
+  | { kind: "segment"; segment: LessonSegment; index: number }
+  | { kind: "done" };
+
+function backendChapterToSegment(chapter: BackendChapter): LessonSegment {
+  const paragraphs: string[] = [];
+  if (chapter.description) paragraphs.push(chapter.description);
+  if (chapter.content) {
+    const chunks = chapter.content.split("\n\n").filter(Boolean);
+    paragraphs.push(...chunks.slice(0, 10));
+  }
+  if (paragraphs.length === 0) paragraphs.push("Contenu du chapitre à venir.");
+  return {
+    id: `ch-${chapter.id}`,
+    heading: chapter.title,
+    paragraphs,
+    videoUrl: chapter.video_url || "",
+    videoTitle: chapter.title,
+    videoDescription: chapter.description || "",
+    videoDuration: chapter.duration_min > 0 ? `${chapter.duration_min} min` : "",
+  };
+}
+
 export default function CourseDetail({ course, onBack, onOpenAI }: CourseDetailProps) {
-  const chapters = useMemo(() => buildChaptersForCourse(course), [course]);
-  const segments = useMemo(() => buildLessonSegments(course), [course]);
+  const [backendChapters, setBackendChapters] = useState<BackendChapter[] | null>(null);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [planOpen, setPlanOpen] = useState(true);
+  const [current, setCurrent] = useState(0);
 
-  const [openChapterId, setOpenChapterId] = useState<string | null>(chapters[0]?.id ?? null);
-  const [activeSegmentId, setActiveSegmentId] = useState<string | null>(segments[0]?.id ?? null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Derive the current chapter from slide index
+  const currentChapter =
+    backendChapters && current > 0 && current <= backendChapters.length
+      ? backendChapters[current - 1]
+      : null;
 
-  const segmentRefs = useRef<Record<string, HTMLElement | null>>({});
+  // Tell the AI where the student is (session context)
+  useAITracking({
+    courseId:     course.backendId,
+    courseTitle:  course.title,
+    chapterId:    currentChapter?.id,
+    chapterTitle: currentChapter?.title,
+  });
 
-  const currentLessonTitle = chapters[0]?.lessons[0]?.title ?? "Leçon 1";
+  // Log activity events for AI behavioral context
+  const { logEvent } = useActivityTracker({
+    courseId:     course.backendId,
+    chapterId:    currentChapter?.id,
+    chapterTitle: currentChapter?.title,
+  });
+
+  // Wrapper : log CHAT_OPEN avant d'ouvrir le panneau IA
+  const handleOpenAI = useCallback(() => {
+    logEvent("CHAT_OPEN", { chapter: currentChapter?.title });
+    onOpenAI();
+  }, [logEvent, onOpenAI, currentChapter?.title]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]) {
-          const id = visible[0].target.getAttribute("data-segment-id");
-          if (id) setActiveSegmentId(id);
-        }
-      },
-      { rootMargin: "-30% 0px -55% 0px", threshold: [0.1, 0.3, 0.6] },
-    );
-    Object.values(segmentRefs.current).forEach((el) => {
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [segments]);
+    if (!course.backendId) return;
+    setLoadingChapters(true);
+    apiGetCourseChapters(course.backendId)
+      .then(setBackendChapters)
+      .catch(() => setBackendChapters([]))
+      .finally(() => setLoadingChapters(false));
+  }, [course.backendId]);
 
-  const totalLessons = chapters.reduce((acc, c) => acc + c.lessons.length, 0);
-  const completedLessons = chapters.reduce(
-    (acc, c) => acc + c.lessons.filter((l) => l.isCompleted).length,
-    0,
+  const segments = useMemo<LessonSegment[]>(() => {
+    if (course.backendId !== undefined) {
+      if (backendChapters === null) return [];
+      return backendChapters.map((ch) => backendChapterToSegment(ch));
+    }
+    return buildLessonSegments(course);
+  }, [course, backendChapters]);
+
+  const slides: Slide[] = useMemo(
+    () => [
+      { kind: "cover" },
+      ...segments.map((segment, index) => ({ kind: "segment" as const, segment, index })),
+      { kind: "done" },
+    ],
+    [segments],
   );
-  const progressPercent = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
 
-  const scrollToSegment = (id: string) => {
-    setMobileSidebarOpen(false);
-    const el = segmentRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  const total = slides.length;
+
+  // Log CHAPTER_COMPLETE quand l'étudiant atteint la slide "done"
+  const isDoneSlide = slides[current]?.kind === "done";
+  useEffect(() => {
+    if (isDoneSlide && course.backendId) {
+      logEvent("CHAPTER_COMPLETE", {
+        course_id:     course.backendId,
+        chapters_done: backendChapters?.length,
+      });
+    }
+  }, [isDoneSlide]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const goTo = useCallback(
+    (idx: number) => {
+      const clamped = Math.max(0, Math.min(total - 1, idx));
+      setCurrent(clamped);
+    },
+    [total],
+  );
+
+  const prev = useCallback(() => goTo(current - 1), [current, goTo]);
+  const next = useCallback(() => goTo(current + 1), [current, goTo]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [next, prev]);
+
+  const touchStart = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current;
+    if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+    touchStart.current = null;
   };
 
-  const sidebarContent = (
-    <>
-      <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-        <div
-          className="relative h-28 w-full overflow-hidden bg-cover bg-center"
-          style={{ backgroundImage: `url('${course.coverImage}')` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 to-transparent" />
-          <div className="absolute bottom-2 left-3 right-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FFB347]">
-              {course.categoryName}
-            </p>
-          </div>
-        </div>
-        <h2 className="mt-4 text-base font-bold leading-tight text-slate-900 dark:text-white">
-          {course.title}
-        </h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{course.professor}</p>
+  // ── Proactive AI — blocking detection ──────────────────────────────────────
+  // If the student stays on the same chapter for 3 minutes, suggest AI help
+  const [showBlockingHint, setShowBlockingHint] = useState(false);
 
-        <div className="mt-4 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-          <span>Progression</span>
-          <span className="text-[#FF6B00]">{progressPercent}%</span>
-        </div>
-        <div className="mt-1.5 h-1.5 w-full bg-slate-200 dark:bg-slate-800">
-          <div
-            className="h-full bg-gradient-to-r from-[#FFB347] to-[#FF6B00]"
-            style={{ width: `${progressPercent}%` }}
-          />
+  useEffect(() => {
+    setShowBlockingHint(false); // reset on every chapter change
+    if (!currentChapter) return;
+
+    const timer = setTimeout(() => {
+      setShowBlockingHint(true);
+    }, 3 * 60 * 1000); // 3 minutes
+
+    return () => clearTimeout(timer);
+  }, [currentChapter?.id]);
+
+  const progressPct = (current / Math.max(total - 1, 1)) * 100;
+
+  // Sauvegarde de la progression catalogue en DB (debounce 1.5s)
+  useEffect(() => {
+    if (!course.backendId || !isAuthenticated()) return;
+    const pct = Math.round(progressPct);
+    const t = setTimeout(() => {
+      apiUpdateCatalogueProgress(course.backendId!, pct).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [progressPct, course.backendId]);
+
+  if (loadingChapters) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <Loader2 className="h-8 w-8 animate-spin text-[#FF6B00]" />
+          <p className="text-sm font-medium">Chargement des chapitres…</p>
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto p-3">
-        <p className="px-2 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-          Plan du cours
-        </p>
-        <div className="space-y-2">
-          {chapters.map((chapter) => {
-            const isOpen = openChapterId === chapter.id;
-            const completed = chapter.lessons.filter((l) => l.isCompleted).length;
-            return (
-              <div
-                key={chapter.id}
-                className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-              >
-                <button
-                  onClick={() => setOpenChapterId(isOpen ? null : chapter.id)}
-                  className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#FF6B00]/10 text-xs font-bold text-[#FF6B00]">
-                    {chapter.orderIndex + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
-                      {chapter.title}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {completed}/{chapter.lessons.length} leçons
-                    </p>
-                  </div>
-                  {isOpen ? (
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="border-t border-slate-100 dark:border-slate-800">
-                    {chapter.lessons.map((lesson) => {
-                      const Icon = lesson.isCompleted
-                        ? CheckCircle2
-                        : lesson.isLocked
-                          ? Lock
-                          : Circle;
-                      return (
-                        <div
-                          key={lesson.id}
-                          className={`flex items-center gap-2.5 px-4 py-2.5 text-xs ${
-                            lesson.isLocked
-                              ? "text-slate-400 dark:text-slate-600"
-                              : "text-slate-600 dark:text-slate-300"
-                          } ${lesson.isCompleted ? "bg-emerald-50/50 dark:bg-emerald-950/10" : ""}`}
-                        >
-                          <Icon
-                            className={`h-3.5 w-3.5 shrink-0 ${
-                              lesson.isCompleted ? "text-emerald-500" : ""
-                            }`}
-                          />
-                          <span className="flex-1 truncate">{lesson.title}</span>
-                          <span className="text-[10px] text-slate-400">
-                            {lesson.estimatedDuration}m
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
-          <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-            Sections de cette leçon
-          </p>
-          <div className="mt-2 space-y-1">
-            {segments.map((seg, idx) => {
-              const isActive = activeSegmentId === seg.id;
-              return (
-                <button
-                  key={seg.id}
-                  onClick={() => scrollToSegment(seg.id)}
-                  className={`flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition-colors ${
-                    isActive
-                      ? "bg-[#FF6B00] text-white"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <span
-                    className={`shrink-0 text-[10px] font-bold ${
-                      isActive ? "text-white/90" : "text-[#FF6B00]"
-                    }`}
-                  >
-                    {String(idx + 1).padStart(2, "0")}
-                  </span>
-                  <span className="flex-1 leading-tight">{seg.heading}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+    );
+  }
 
   return (
-    <div className="flex h-full bg-slate-50 dark:bg-slate-950">
-      <aside className="hidden w-[320px] flex-shrink-0 flex-col border-r border-slate-200 bg-white lg:flex dark:border-slate-800 dark:bg-slate-900">
-        {sidebarContent}
-      </aside>
+    <div
+      className="relative flex h-full flex-col bg-white"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* ── TOP BAR ──────────────────────────────────────────── */}
+      <div className="z-20 flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 sm:px-5">
+        {/* Back */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-[#FF6B00] transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Cours</span>
+        </button>
 
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="h-5 w-px bg-slate-200" />
+
+        {/* Plan toggle */}
+        <button
+          onClick={() => setPlanOpen((v) => !v)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            planOpen ? "text-[#FF6B00]" : "text-slate-500 hover:text-[#FF6B00]"
+          }`}
+          title="Afficher / masquer le plan"
+        >
+          <Menu className="h-4 w-4" />
+          <span className="hidden sm:inline">Plan</span>
+        </button>
+
+        {/* Title */}
+        <div className="min-w-0 flex-1 text-center">
+          <p className="truncate text-[10px] font-bold uppercase tracking-[0.22em] text-[#FF6B00]">
+            {course.categoryName}
+          </p>
+          <p className="truncate text-xs font-semibold text-slate-800">{course.title}</p>
+        </div>
+
+        {/* AI button */}
+        <button
+          onClick={handleOpenAI}
+          className="flex items-center gap-1.5 bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 transition-opacity"
+        >
+          <Brain className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">IA</span>
+        </button>
+      </div>
+
+      {/* ── PROGRESS BAR ─────────────────────────────────────── */}
+      <div className="h-[2px] w-full flex-shrink-0 bg-slate-100">
+        <div
+          className="h-full bg-gradient-to-r from-[#FFB347] to-[#FF6B00] transition-all duration-500"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      {/* ── MAIN AREA ─────────────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+
+        {/* ── LEFT PLAN SIDEBAR (pushes content) ────────────── */}
+        <aside
+          className={`flex-shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 ease-in-out ${
+            planOpen ? "w-64" : "w-0"
+          }`}
+        >
+          <div className="flex h-full w-64 flex-col">
+            {/* Sidebar header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Plan du cours
+              </p>
+              <button
+                onClick={() => setPlanOpen(false)}
+                className="rounded p-1 text-slate-300 hover:text-slate-500 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Chapter list */}
+            <div className="flex-1 overflow-y-auto py-2">
+              {/* Cover */}
+              <button
+                onClick={() => goTo(0)}
+                className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition-colors ${
+                  current === 0
+                    ? "border-l-2 border-[#FF6B00] bg-orange-50 text-[#FF6B00]"
+                    : "border-l-2 border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                }`}
+              >
+                <Star className={`h-3.5 w-3.5 flex-shrink-0 ${current === 0 ? "text-[#FF6B00]" : "text-slate-300"}`} />
+                <span className="text-xs font-semibold">Introduction</span>
+              </button>
+
+              {/* Chapters */}
+              {segments.length > 0 && (
+                <>
+                  <p className="mt-3 mb-1 px-4 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-300">
+                    {segments.length} chapitre{segments.length !== 1 ? "s" : ""}
+                  </p>
+                  {segments.map((seg, i) => {
+                    const slideIdx = i + 1;
+                    const isCurrent = current === slideIdx;
+                    const isDone = current > slideIdx;
+                    return (
+                      <button
+                        key={seg.id}
+                        onClick={() => goTo(slideIdx)}
+                        className={`flex w-full items-start gap-2.5 border-l-2 px-4 py-2.5 text-left transition-colors ${
+                          isCurrent
+                            ? "border-[#FF6B00] bg-orange-50 text-[#FF6B00]"
+                            : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
+                            isCurrent
+                              ? "bg-[#FF6B00] text-white"
+                              : isDone
+                              ? "bg-emerald-100 text-emerald-600"
+                              : "bg-slate-100 text-slate-400"
+                          }`}
+                        >
+                          {isDone ? "✓" : i + 1}
+                        </span>
+                        <span className="flex-1 text-xs font-medium leading-snug">{seg.heading}</span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {segments.length === 0 && course.backendId && (
+                <p className="px-4 py-6 text-center text-xs text-slate-400">
+                  Aucun chapitre disponible.
+                </p>
+              )}
+
+              {/* Done */}
+              <button
+                onClick={() => goTo(total - 1)}
+                className={`mt-1 flex w-full items-center gap-2.5 border-l-2 px-4 py-2.5 text-left transition-colors ${
+                  current === total - 1
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                }`}
+              >
+                <CheckCircle2 className={`h-3.5 w-3.5 flex-shrink-0 ${current === total - 1 ? "text-emerald-500" : "text-slate-300"}`} />
+                <span className="text-xs font-semibold">Fin du cours</span>
+              </button>
+            </div>
+
+            {/* Progress footer */}
+            <div className="border-t border-slate-100 px-4 py-3">
+              <div className="mb-1.5 flex items-center justify-between text-[10px]">
+                <span className="font-medium text-slate-400">Progression</span>
+                <span className="font-bold text-[#FF6B00]">{Math.round(progressPct)}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#FFB347] to-[#FF6B00] transition-all duration-500"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <p className="mt-2 text-center text-[9px] text-slate-300">
+                {current} / {total - 1} étapes
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── SLIDE TRACK ──────────────────────────────────────── */}
+        <div className="relative min-w-0 flex-1 overflow-hidden bg-white">
           <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-          <aside className="absolute left-0 top-0 flex h-full w-[88%] max-w-sm flex-col bg-white dark:bg-slate-900">
-            {sidebarContent}
-          </aside>
+            className="flex h-full transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+            style={{
+              width: `${total * 100}%`,
+              transform: `translateX(-${(current / total) * 100}%)`,
+            }}
+          >
+            {slides.map((slide, i) => (
+              <div
+                key={i}
+                className="h-full overflow-y-auto"
+                style={{ width: `${100 / total}%` }}
+              >
+                {slide.kind === "cover" && (
+                  <CoverSlide course={course} onStart={next} />
+                )}
+                {slide.kind === "segment" && (
+                  <SegmentSlide
+                    segment={slide.segment}
+                    index={slide.index}
+                    total={segments.length}
+                  />
+                )}
+                {slide.kind === "done" && (
+                  <DoneSlide course={course} onBack={onBack} onOpenAI={handleOpenAI} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Prev arrow */}
+          {current > 0 && (
+            <button
+              onClick={prev}
+              className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm hover:border-[#FF6B00] hover:text-[#FF6B00] transition-colors sm:left-5"
+              aria-label="Précédent"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* Next arrow */}
+          {current < total - 1 && (
+            <button
+              onClick={next}
+              className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm hover:border-[#FF6B00] hover:text-[#FF6B00] transition-colors sm:right-5"
+              aria-label="Suivant"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── BOTTOM NAV ───────────────────────────────────────── */}
+      <div className="flex flex-shrink-0 items-center justify-center gap-3 border-t border-slate-100 bg-white py-2.5">
+        <span className="text-[10px] font-semibold tabular-nums text-slate-300">
+          {current + 1} / {total}
+        </span>
+        <div className="flex items-center gap-1">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === current ? 20 : 6,
+                height: 6,
+                background:
+                  i === current
+                    ? "linear-gradient(90deg,#FFB347,#FF6B00)"
+                    : i < current
+                    ? "rgba(255,107,0,0.3)"
+                    : "#e2e8f0",
+              }}
+              aria-label={`Aller à la page ${i + 1}`}
+            />
+          ))}
+        </div>
+        <span className="text-[10px] text-slate-300">← →</span>
+      </div>
+
+      {/* ── PROACTIVE AI BLOCKING HINT ───────────────────────────────────── */}
+      {showBlockingHint && currentChapter && (
+        <div className="absolute bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-start gap-3 rounded-2xl border border-orange-200 bg-white p-4 shadow-2xl shadow-[#FF6B00]/10">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FFB347] to-[#FF6B00] shadow">
+              <Brain className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-800">
+                Cette partie semble difficile ?
+              </p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                Je peux t'expliquer <span className="font-medium text-slate-700">«&nbsp;{currentChapter.title}&nbsp;»</span> autrement, avec des exemples concrets.
+              </p>
+              <div className="mt-2.5 flex gap-2">
+                <button
+                  onClick={() => { setShowBlockingHint(false); handleOpenAI(); }}
+                  className="flex-1 rounded-full bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-3 py-1.5 text-[11px] font-bold text-white shadow transition-opacity hover:opacity-90"
+                >
+                  Oui, aide-moi
+                </button>
+                <button
+                  onClick={() => setShowBlockingHint(false)}
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
+                >
+                  Non merci
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Cours
-          </button>
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="p-2 text-slate-500 hover:bg-slate-100 lg:hidden dark:hover:bg-slate-800"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
-              {course.categoryName}
-            </p>
-            <h1 className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {currentLessonTitle}
-            </h1>
-          </div>
-          <button
-            onClick={onOpenAI}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
-          >
-            <Brain className="h-4 w-4" />
-            <span className="hidden sm:inline">Demander à l'IA</span>
-            <span className="sm:hidden">IA</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <section
-            className="relative overflow-hidden bg-cover bg-center"
-            style={{ backgroundImage: `url('${course.coverImage}')` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-slate-950/50" />
-            <div className="absolute inset-y-0 left-0 w-1 bg-[#FF6B00]" />
-            <div className="relative mx-auto max-w-4xl px-6 py-12 md:py-16">
-              <span className="inline-flex items-center gap-2 border-l-2 border-[#FF6B00] bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.28em] text-[#FFB347]">
-                Leçon en cours
-              </span>
-              <h2 className="mt-4 text-3xl font-bold leading-tight text-white md:text-4xl">
-                {currentLessonTitle}
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm text-white/80 md:text-base">
-                {course.description}
-              </p>
-              <div className="mt-6 flex flex-wrap gap-4 text-xs text-white/80">
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-[#FFB347]" />
-                  {course.estimatedDuration}h au total
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <BookOpen className="h-4 w-4 text-[#FFB347]" />
-                  {course.lessonsCount} leçons
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-[#FFB347]" />
-                  {course.enrolledCount.toLocaleString("fr-FR")} inscrits
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Star className="h-4 w-4 text-[#FFB347]" />
-                  Animé par {course.professor}
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="mb-8 border-l-4 border-[#FF6B00] bg-white p-5 shadow-sm dark:bg-slate-900">
-              <div className="flex items-start gap-3">
-                <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#FF6B00]" />
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
-                    Comment suivre cette leçon
-                  </p>
-                  <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">
-                    Faites défiler pour parcourir les sections. Chaque partie contient
-                    une explication écrite suivie d'une vidéo. Vous pouvez à tout
-                    moment cliquer sur une section dans le panneau de gauche pour y
-                    sauter directement.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <article className="space-y-12">
-              {segments.map((segment, index) => (
-                <LessonSection
-                  key={segment.id}
-                  segment={segment}
-                  index={index}
-                  total={segments.length}
-                  registerRef={(el) => {
-                    segmentRefs.current[segment.id] = el;
-                  }}
-                />
-              ))}
-            </article>
-
-            <div className="mt-12 border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Vous avez terminé cette leçon
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                    Marquez la leçon comme terminée pour débloquer la suivante et
-                    mettre à jour votre progression.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button className="inline-flex items-center gap-2 bg-[#FF6B00] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#e56000]">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Marquer comme terminée
-                    </button>
-                    <button
-                      onClick={onOpenAI}
-                      className="inline-flex items-center gap-2 border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <Brain className="h-4 w-4" />
-                      Réviser avec l'IA
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
     </div>
   );
 }
 
-function LessonSection({
+/* ── Cover Slide ─────────────────────────────────────────────────────────── */
+function CoverSlide({ course, onStart }: { course: Course; onStart: () => void }) {
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center bg-white px-6 py-12">
+      {/* Cover image */}
+      {course.coverImage && (
+        <div className="mb-8 w-full max-w-2xl overflow-hidden rounded-none shadow-lg">
+          <img
+            src={course.coverImage}
+            alt={course.title}
+            className="h-48 w-full object-cover"
+          />
+        </div>
+      )}
+
+      <div className="w-full max-w-2xl text-center">
+        <span className="inline-block border border-[#FF6B00]/30 bg-orange-50 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF6B00]">
+          {course.categoryName}
+        </span>
+
+        <h1 className="mt-5 text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
+          {course.title}
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500">
+          {course.description}
+        </p>
+
+        {/* Meta */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-5 text-xs text-slate-400">
+          {course.estimatedDuration > 0 && (
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-[#FFB347]" />
+              {course.estimatedDuration}h de contenu
+            </span>
+          )}
+          {course.chaptersCount > 0 && (
+            <span className="flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5 text-[#FFB347]" />
+              {course.chaptersCount} chapitre{course.chaptersCount !== 1 ? "s" : ""}
+            </span>
+          )}
+          {course.enrolledCount != null && (
+            <span className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-[#FFB347]" />
+              {course.enrolledCount.toLocaleString("fr-FR")} inscrits
+            </span>
+          )}
+          {course.professor && (
+            <span className="flex items-center gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 text-[#FFB347]" />
+              {course.professor}
+            </span>
+          )}
+        </div>
+
+        <button
+          onClick={onStart}
+          className="mt-8 inline-flex items-center gap-2.5 bg-[#FF6B00] px-8 py-3.5 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-md shadow-[#FF6B00]/25 transition-all hover:bg-[#e56000] hover:shadow-lg"
+        >
+          <Play className="h-4 w-4 fill-white" />
+          Commencer
+        </button>
+
+        <p className="mt-4 text-[10px] text-slate-300">
+          Utilisez les flèches ou swipez pour naviguer
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Segment Slide ───────────────────────────────────────────────────────── */
+function SegmentSlide({
   segment,
   index,
   total,
-  registerRef,
 }: {
   segment: LessonSegment;
   index: number;
   total: number;
-  registerRef: (el: HTMLElement | null) => void;
 }) {
-  return (
-    <section
-      ref={registerRef}
-      data-segment-id={segment.id}
-      className="scroll-mt-24"
-    >
-      <header className="mb-5">
-        <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-          <span className="text-[#FF6B00]">
-            {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-          </span>
-          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-          <FileText className="h-3.5 w-3.5" />
-          Section
-        </div>
-        <h3 className="mt-3 text-2xl font-bold leading-tight text-slate-900 dark:text-white md:text-3xl">
-          {segment.heading}
-        </h3>
-      </header>
+  const hasVideo = Boolean(segment.videoUrl);
 
-      <div className="prose prose-slate max-w-none dark:prose-invert prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed">
-        {segment.paragraphs.map((paragraph, i) => (
-          <p key={i}>{paragraph}</p>
-        ))}
+  return (
+    <div className="flex min-h-full flex-col bg-white">
+      {/* Chapter header */}
+      <div className="flex flex-shrink-0 items-center gap-3 border-b border-slate-100 px-6 py-4 lg:px-10">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-[#FF6B00] text-xs font-bold text-white">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-300">
+            Chapitre {index + 1} sur {total}
+          </p>
+          <h2 className="truncate text-base font-bold text-slate-900">{segment.heading}</h2>
+        </div>
       </div>
 
-      <figure className="mt-6 overflow-hidden border border-slate-200 bg-slate-950 shadow-md dark:border-slate-800">
-        <div className="aspect-video w-full bg-black">
-          <video
-            controls
-            preload="metadata"
-            playsInline
-            className="h-full w-full"
-            poster={`https://placehold.co/1280x720/0f1219/FF6B00?text=${encodeURIComponent(`Vidéo · ${segment.videoDuration}`)}`}
-          >
-            <source src={segment.videoUrl} type="video/mp4" />
-            Votre navigateur ne prend pas en charge la lecture vidéo.
-          </video>
+      {/* Content area */}
+      <div className={`flex flex-1 ${hasVideo ? "flex-col lg:flex-row" : "flex-col"}`}>
+        {/* Text content */}
+        <div className="flex-1 px-6 py-8 lg:px-10 lg:py-10">
+          <div className="mx-auto max-w-2xl">
+            <div className="space-y-5 text-[15px] leading-8 text-slate-600">
+              {segment.paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+          </div>
         </div>
-        <figcaption className="flex items-start gap-3 border-t border-slate-800 bg-slate-900 px-5 py-4 text-white">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-[#FF6B00]/15 text-[#FFB347]">
-            <Video className="h-4 w-4" />
+
+        {/* Video */}
+        {hasVideo && (
+          <div className="w-full flex-shrink-0 border-t border-slate-100 bg-slate-50 lg:w-[44%] lg:border-l lg:border-t-0">
+            <div className="relative aspect-video w-full bg-black">
+              {segment.videoUrl.includes("youtube") ? (
+                <iframe
+                  src={
+                    segment.videoUrl
+                      .replace("watch?v=", "embed/")
+                      .replace("youtu.be/", "www.youtube.com/embed/") +
+                    "?rel=0&modestbranding=1"
+                  }
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="h-full w-full object-contain"
+                >
+                  <source src={segment.videoUrl} type="video/mp4" />
+                </video>
+              )}
+            </div>
+            <div className="flex items-start gap-3 border-t border-slate-200 bg-white px-4 py-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-orange-200 bg-orange-50">
+                <Video className="h-3.5 w-3.5 text-[#FF6B00]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-slate-800">{segment.videoTitle}</p>
+                {segment.videoDescription && (
+                  <p className="truncate text-[10px] text-slate-400">{segment.videoDescription}</p>
+                )}
+              </div>
+              {segment.videoDuration && (
+                <span className="flex items-center gap-1 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+                  <Play className="h-2.5 w-2.5" />
+                  {segment.videoDuration}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">{segment.videoTitle}</p>
-            <p className="mt-0.5 text-xs text-white/70">
-              {segment.videoDescription}
-            </p>
-          </div>
-          <span className="inline-flex shrink-0 items-center gap-1 border border-white/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80">
-            <Play className="h-3 w-3" />
-            {segment.videoDuration}
-          </span>
-        </figcaption>
-      </figure>
-    </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Done Slide ──────────────────────────────────────────────────────────── */
+function DoneSlide({
+  course,
+  onBack,
+  onOpenAI,
+}: {
+  course: Course;
+  onBack: () => void;
+  onOpenAI: () => void;
+}) {
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center bg-white px-6 py-12">
+      <div className="flex h-20 w-20 items-center justify-center border-2 border-emerald-200 bg-emerald-50">
+        <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+      </div>
+
+      <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-500">
+        Cours terminé
+      </p>
+      <h2 className="mt-2 text-3xl font-black text-slate-900">Félicitations !</h2>
+      <p className="mt-4 max-w-md text-center text-sm leading-7 text-slate-500">
+        Vous avez parcouru toutes les sections de{" "}
+        <span className="font-semibold text-slate-800">« {course.title} »</span>.<br />
+        Continuez sur votre lancée.
+      </p>
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <button
+          onClick={onOpenAI}
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#FFB347] to-[#FF6B00] px-7 py-3 text-sm font-bold text-white shadow-md shadow-[#FF6B00]/25 hover:opacity-90 transition-opacity"
+        >
+          <Sparkles className="h-4 w-4" />
+          Réviser avec l'IA
+        </button>
+        <button
+          onClick={onBack}
+          className="flex items-center justify-center gap-2 border border-slate-200 px-7 py-3 text-sm font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour aux cours
+        </button>
+      </div>
+    </div>
   );
 }

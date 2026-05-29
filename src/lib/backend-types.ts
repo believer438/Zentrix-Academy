@@ -10,6 +10,7 @@ export interface Category {
 
 export interface Course {
   id: string;
+  backendId?: number;
   title: string;
   description: string;
   coverImage: string;
@@ -117,4 +118,34 @@ export interface UserProfile {
   coursesCompleted: number;
   quizzesPassed: number;
   totalStudyHours: number;
+}
+
+// ─── Catalogue (admin-managed courses) ───────────────────────────────────────
+
+export interface BackendChapter {
+  id: number;
+  course_id: number;
+  title: string;
+  description: string;
+  content: string;
+  order_index: number;
+  video_url: string;
+  duration_min: number;
+}
+
+export interface CatalogueCourse {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  cover_image: string;
+  level: "beginner" | "intermediate" | "advanced";
+  duration_hours: number;
+  instructor_name: string;
+  is_published: boolean;
+  tags: string;
+  enrolled_count: number;
+  is_enrolled: boolean;
+  chapters: BackendChapter[];
+  created_at: string;
 }

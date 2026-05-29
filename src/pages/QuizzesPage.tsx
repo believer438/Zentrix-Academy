@@ -13,6 +13,7 @@ import {
 import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
 import { mockQuizzes } from "@/lib/mock-data";
+import { apiLogActivity, isAuthenticated } from "@/lib/api-client";
 
 interface QuizzesPageProps {
   onOpenAI: () => void;
@@ -33,7 +34,23 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
   const [activeFilter, setActiveFilter] = useState<"all" | "practice" | "exam" | "revision">("all");
+  const [startingId, setStartingId]     = useState<string | null>(null);
   const { toast } = useToast();
+
+  const handleStartQuiz = async (quiz: (typeof mockQuizzes)[number]) => {
+    setStartingId(quiz.id);
+    if (isAuthenticated()) {
+      void apiLogActivity({
+        event_type: "QUIZ_START",
+        metadata:   { quiz_id: quiz.id, quiz_title: quiz.title, quiz_type: quiz.quizType },
+      });
+    }
+    toast({
+      title:       "Quiz lancé",
+      description: `« ${quiz.title} » démarre maintenant. Bonne chance !`,
+    });
+    setStartingId(null);
+  };
 
   const quizzes = useMemo(
     () => (activeFilter === "all" ? mockQuizzes : mockQuizzes.filter((q) => q.quizType === activeFilter)),
@@ -164,13 +181,9 @@ export default function QuizzesPage({ onOpenAI }: QuizzesPageProps) {
 
               <div className="mt-5 flex gap-2">
                 <button
-                  onClick={() =>
-                    toast({
-                      title: "Quiz lancé",
-                      description: `« ${quiz.title} » démarre maintenant. Bonne chance !`,
-                    })
-                  }
-                  className="flex flex-1 items-center justify-center gap-2 bg-[#FF6B00] py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#e56000]"
+                  onClick={() => handleStartQuiz(quiz)}
+                  disabled={startingId === quiz.id}
+                  className="flex flex-1 items-center justify-center gap-2 bg-[#FF6B00] py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#e56000] disabled:opacity-60"
                 >
                   <Play className="h-4 w-4" />
                   Commencer

@@ -2,6 +2,47 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.sk {
+  position: relative;
+  overflow: hidden;
+  background-color: #e8ecf0;
+}
+
+.dark .sk {
+  background-color: #1e2535;
+}
+
+.sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.55) 40%,
+    rgba(255,255,255,0.75) 50%,
+    rgba(255,255,255,0.55) 60%,
+    transparent 100%
+  );
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.dark .sk::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.06) 40%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.06) 60%,
+    transparent 100%
+  );
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

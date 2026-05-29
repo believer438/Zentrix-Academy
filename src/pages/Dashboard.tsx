@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { mockCourses } from "@/lib/mock-data";
 import {
   FadeUp,
   RevealLine,
@@ -163,10 +162,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [exploreQuery, setExploreQuery] = useState("");
-  const [exploreLoading, setExploreLoading] = useState(false);
-  const [exploreResults, setExploreResults] = useState<ExploreCourse[]>([]);
-  const [exploreError, setExploreError] = useState("");
-  const [hasSearched, setHasSearched] = useState(false);
   const HERO_AUTOPLAY_MS = 6000;
 
   const changeSlide = (next: number) => {
@@ -185,80 +180,18 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   }, [activeSlide]);
 
   useEffect(() => {
-    const onScroll = () => {
-      setScrollY(window.scrollY || 0);
-    };
+    const container =
+      document.querySelector<HTMLElement>("main.flex-1") ??
+      document.querySelector<HTMLElement>("main") ??
+      document.documentElement;
+    const onScroll = () => setScrollY(container.scrollTop || 0);
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    const query = exploreQuery.trim();
-    if (!query) {
-      setExploreResults([]);
-      setExploreError("");
-      setExploreLoading(false);
-      setHasSearched(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setExploreLoading(true);
-      setExploreError("");
-      setHasSearched(true);
-
-      const lowered = query.toLowerCase();
-      const matches = mockCourses
-        .filter((course) => {
-          const haystack = [
-            course.title,
-            course.description,
-            course.categoryName,
-            course.tags?.join(" ") ?? "",
-          ]
-            .join(" ")
-            .toLowerCase();
-          return haystack.includes(lowered);
-        })
-        .slice(0, 8)
-        .map((course, index) => normalizeCourse(course, index));
-
-      setExploreResults(matches);
-      setExploreLoading(false);
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [exploreQuery]);
-
-  const runSearchNow = () => {
-    const query = exploreQuery.trim();
-    if (!query) return;
-
-    setExploreLoading(true);
-    setExploreError("");
-    setHasSearched(true);
-
-    const lowered = query.toLowerCase();
-    const matches = mockCourses
-      .filter((course) => {
-        const haystack = [
-          course.title,
-          course.description,
-          course.categoryName,
-          course.tags?.join(" ") ?? "",
-        ]
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(lowered);
-      })
-      .slice(0, 8)
-      .map((course, index) => normalizeCourse(course, index));
-
-    setExploreResults(matches);
-    setExploreLoading(false);
+  const runSearch = () => {
+    onNavigate("courses");
   };
 
   const heroParallaxY = Math.min(scrollY * 0.3, 180);
@@ -485,84 +418,32 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 <input
                   value={exploreQuery}
                   onChange={(e) => setExploreQuery(e.target.value)}
-                  placeholder="Rechercher des cours, parcours, competences, sujets..."
+                  onKeyDown={(e) => e.key === "Enter" && runSearch()}
+                  placeholder="Rechercher dans vos documents uploadés..."
                   className="h-14 flex-1 bg-white/7 px-5 text-base text-white placeholder:text-slate-400 outline-none"
                 />
                 <button
-                  onClick={runSearchNow}
+                  onClick={runSearch}
                   className="inline-flex h-14 items-center justify-center gap-2 bg-[#FF6B00] px-8 text-sm font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#e56000]"
                 >
                   <Search className="h-4 w-4" />
-                  Rechercher
+                  Accéder
                 </button>
               </FadeUp>
             </div>
 
             <FadeUp delay={0.3} className="mx-auto mt-6 flex max-w-4xl flex-wrap items-center gap-2 text-xs">
-              <span className="mr-2 text-slate-400">Populaires :</span>
+              <span className="mr-2 text-slate-400">Liens rapides :</span>
               {popularTags.map((tag) => (
                 <button
                   key={tag}
-                  onClick={() => setExploreQuery(tag)}
+                  onClick={() => onNavigate("courses")}
                   className="border border-white/15 bg-white/5 px-4 py-1.5 text-slate-300 transition-colors hover:border-[#FF6B00] hover:text-[#FF6B00]"
                 >
                   #{tag}
                 </button>
               ))}
             </FadeUp>
-
-            {(exploreLoading || hasSearched) && (
-              <div className="mt-8">
-                {exploreLoading && (
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className="rounded-none border border-white/15 bg-white/5 p-5">
-                        <Skeleton className="h-44 w-full rounded-none bg-white/10" />
-                        <Skeleton className="mt-5 h-4 w-24 bg-white/10" />
-                        <Skeleton className="mt-3 h-6 w-5/6 bg-white/10" />
-                        <Skeleton className="mt-3 h-4 w-full bg-white/10" />
-                        <Skeleton className="mt-2 h-4 w-11/12 bg-white/10" />
-                        <Skeleton className="mt-6 h-9 w-36 bg-white/10" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!exploreLoading && exploreError && (
-                  <p className="rounded-none border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                    {exploreError}
-                  </p>
-                )}
-
-                {!exploreLoading && !exploreError && exploreResults.length > 0 && (
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                    {exploreResults.map((course) => (
-                      <article
-                        key={course.id}
-                        className="rounded-none border border-white/15 bg-white/7 p-5 text-left transition-colors hover:border-[#FF6B00]/70"
-                      >
-                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]">
-                          {course.categoryName}
-                        </p>
-                        <h3 className="mt-2 line-clamp-2 text-base font-semibold text-white">{course.title}</h3>
-                        <p className="mt-2 line-clamp-3 text-xs text-slate-300">{course.description}</p>
-                        <button
-                          onClick={() => onNavigate("courses")}
-                          className="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#FF6B00]"
-                        >
-                          Ouvrir dans les cours
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                )}
-
-                {!exploreLoading && !exploreError && exploreResults.length === 0 && (
-                  <p className="text-sm text-slate-400">Aucun cours trouve pour cette recherche.</p>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>

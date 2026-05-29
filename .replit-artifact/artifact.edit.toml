@@ -1,0 +1,21 @@
+kind = "web"
+previewPath = "/"
+title = "Zentrix Academy"
+version = "1.0.0"
+
+[[services]]
+localPort = 5173
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "cd /home/runner/workspace/artifacts/Zentrix-Academy/eduplatform && npm run dev"
+
+[services.production]
+
+[services.production.build]
+args = ["sh", "-c", "cd /home/runner/workspace/artifacts/Zentrix-Academy/eduplatform && npm run build"]
+
+[services.production.serve]
+type = "static"
+path = "/home/runner/workspace/artifacts/Zentrix-Academy/eduplatform/dist"

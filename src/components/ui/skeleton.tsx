@@ -1,15 +1,16 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("animate-pulse rounded-md bg-primary/10", className)}
-      {...props}
-    />
-  )
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+  rounded?: boolean;
 }
 
-export { Skeleton }
+function Skeleton({ className, rounded = false, ...props }: SkeletonProps) {
+  return (
+    <div
+      className={cn("sk", rounded ? "rounded-full" : "rounded-none", className)}
+      {...props}
+    />
+  );
+}
+
+export { Skeleton };

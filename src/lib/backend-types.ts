@@ -130,6 +130,7 @@ export interface BackendChapter {
   content: string;
   order_index: number;
   video_url: string;
+  video_position: string;
   duration_min: number;
 }
 

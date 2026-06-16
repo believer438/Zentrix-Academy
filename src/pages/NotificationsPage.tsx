@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useSetPageContext } from "@/hooks/usePageContext";
 import {
-  AlertTriangle, Bell, CheckCircle2, Clock, Info, Loader2, Trash2,
+  AlertTriangle, Bell, CheckCircle2, Clock, ExternalLink, Info, Loader2, Trash2,
 } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,10 @@ import {
   apiGetNotifications, apiMarkNotificationRead, apiMarkAllNotificationsRead,
   apiDeleteNotification, isAuthenticated,
 } from "@/lib/api-client";
+
+interface Props {
+  onNavigate?: (page: string, data?: unknown) => void;
+}
 
 const TYPE_META: Record<string, { Icon: typeof Bell; label: string; iconClass: string; ringClass: string }> = {
   info:     { Icon: Info,          label: "Info",      iconClass: "text-blue-600 dark:text-blue-400",    ringClass: "border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/20" },
@@ -27,7 +32,7 @@ function formatTime(iso: string | null | undefined) {
   } catch { return ""; }
 }
 
-export default function NotificationsPage() {
+export default function NotificationsPage({ onNavigate }: Props) {
   const { toast } = useToast();
   const [notifs, setNotifs] = useState<BackendNotification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,6 +57,24 @@ export default function NotificationsPage() {
 
   const displayed = filter === "unread" ? notifs.filter((n) => !n.is_read) : notifs;
   const unreadCount = notifs.filter((n) => !n.is_read).length;
+
+  useSetPageContext({
+    current_page: "notifications",
+    page_title: "Notifications",
+    page_data: {
+      total_notifications: notifs.length,
+      unread_count: unreadCount,
+      active_filter: filter,
+      displayed_count: displayed.length,
+      recent_notifications: displayed.slice(0, 10).map((n) => ({
+        id: n.id,
+        type: n.notification_type,
+        message: n.message,
+        is_read: n.is_read,
+        created_at: n.created_at,
+      })),
+    },
+  });
 
   const handleMarkRead = async (id: number) => {
     setActing(id);
@@ -181,6 +204,24 @@ export default function NotificationsPage() {
                       <button onClick={() => handleMarkRead(notif.id)} disabled={acting === notif.id}
                         className="text-[11px] font-semibold text-[#FF6B00] hover:underline disabled:opacity-50">
                         {acting === notif.id ? "..." : "Marquer comme lu"}
+                      </button>
+                    )}
+                    {notif.link_url && onNavigate && (
+                      <button
+                        onClick={() => {
+                          const link = notif.link_url!;
+                          if (!notif.is_read) handleMarkRead(notif.id);
+                          if (link.startsWith("/dashboard/")) {
+                            const page = link.replace("/dashboard/", "") || "dashboard";
+                            onNavigate(page);
+                          } else {
+                            window.open(link, "_blank", "noopener");
+                          }
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-blue-500 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Voir
                       </button>
                     )}
                     <button onClick={() => handleDelete(notif.id)} disabled={acting === notif.id}

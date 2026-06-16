@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { flushSync } from "react-dom";
 import {
   Send, Mic, MicOff, Sparkles, BookOpen, HelpCircle, Lightbulb,
   Bot, ChevronDown, Maximize2, Minimize2, Languages, Map,
@@ -174,9 +175,11 @@ export default function AIPhoneChat({
   };
 
   const appendToStreaming = useCallback((id: string, delta: string) => {
-    setMessages((prev) =>
-      prev.map((m) => m.id === id ? { ...m, content: m.content + delta } : m),
-    );
+    flushSync(() => {
+      setMessages((prev) =>
+        prev.map((m) => m.id === id ? { ...m, content: m.content + delta } : m),
+      );
+    });
   }, []);
 
   const sendMessage = async (text: string, action?: string) => {

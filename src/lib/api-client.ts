@@ -31,7 +31,19 @@ async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Erreur réseau" }));
     if (res.status === 401) clearAuth();
-    throw new Error((err as ApiError).detail ?? "Erreur inconnue");
+    const detail = (err as ApiError).detail;
+    let message: string;
+    if (typeof detail === "string") {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      // FastAPI validation errors: [{loc, msg, type}]
+      message = detail.map((d: { msg?: string; loc?: string[] }) => d.msg ?? JSON.stringify(d)).join(", ");
+    } else if (detail) {
+      message = JSON.stringify(detail);
+    } else {
+      message = res.status === 401 ? "Email ou mot de passe incorrect." : "Erreur inconnue";
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }
@@ -61,6 +73,11 @@ export interface UserProfile {
   email: string;
   full_name: string | null;
   role: string;
+  avatar_url?: string | null;
+  bio?: string | null;
+  preferred_language?: string | null;
+  created_at?: string | null;
+  is_active?: boolean;
 }
 
 export async function apiGetMe(): Promise<UserProfile> {
@@ -70,27 +87,11 @@ export async function apiGetMe(): Promise<UserProfile> {
   return handleResponse(res);
 }
 
-export async function apiUpdateMe(payload: { full_name?: string; password?: string }): Promise<UserProfile> {
+export async function apiUpdateMe(payload: { full_name?: string; password?: string; avatar_url?: string; bio?: string; preferred_language?: string }): Promise<UserProfile> {
   const res = await fetch(buildApiUrl("/auth/me"), {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload),
-  });
-  return handleResponse(res);
-}
-
-export async function apiGetUsers(): Promise<{ id: number; email: string; full_name: string; role: string }[]> {
-  const res = await fetch(buildApiUrl("/auth/users"), {
-    headers: { ...authHeaders() },
-  });
-  return handleResponse(res);
-}
-
-export async function apiUpdateUserRole(userId: number, role: string): Promise<{ id: number; email: string; role: string }> {
-  const res = await fetch(buildApiUrl(`/auth/users/${userId}/role`), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ role }),
   });
   return handleResponse(res);
 }
@@ -102,11 +103,18 @@ export function getGoogleLoginUrl(): string {
 // ── Cours (personal documents for AI) ─────────────────────────────────────────
 
 export interface BackendCours {
-  id: number;
-  titre: string;
-  fichier_chemin: string;
-  user_id: number;
-  created_at?: string;
+  id:                number;
+  titre:             string;
+  fichier_chemin?:   string;
+  file_type?:        string;
+  file_size?:        number;
+  user_id:           number;
+  created_at?:       string;
+  analysis_result?:  string | null;
+  questions_result?: string | null;
+  analyzed_at?:      string | null;
+  has_analysis?:     boolean;
+  extracted_length?: number;
 }
 
 export async function apiGetMyCours(): Promise<BackendCours[]> {
@@ -152,6 +160,19 @@ export async function apiUpdateCours(id: number, titre: string): Promise<{ messa
     body: form,
   });
   return handleResponse(res);
+}
+
+export async function apiSaveAnalysis(
+  id: number,
+  analysisResult: string,
+  questionsResult: string,
+): Promise<void> {
+  const res = await fetch(buildApiUrl(`/cours/${id}/save_analysis`), {
+    method:  "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body:    JSON.stringify({ analysis_result: analysisResult, questions_result: questionsResult }),
+  });
+  if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
 }
 
 export async function apiGetProgress(coursId: number): Promise<{ cours_id: number; percent_complete: number }> {
@@ -300,7 +321,7 @@ export async function apiDeleteCourse(id: number): Promise<{ message: string }> 
 
 export async function apiCreateChapter(courseId: number, payload: {
   title: string; description: string; content: string;
-  order_index: number; video_url: string; duration_min: number;
+  order_index: number; video_url: string; video_position?: string; duration_min: number;
 }): Promise<BackendChapter> {
   const res = await fetch(buildApiUrl(`/courses/${courseId}/chapters`), {
     method: "POST",
@@ -312,7 +333,7 @@ export async function apiCreateChapter(courseId: number, payload: {
 
 export async function apiUpdateChapter(courseId: number, chapterId: number, payload: Partial<{
   title: string; description: string; content: string;
-  order_index: number; video_url: string; duration_min: number;
+  order_index: number; video_url: string; video_position: string; duration_min: number;
 }>): Promise<BackendChapter> {
   const res = await fetch(buildApiUrl(`/courses/${courseId}/chapters/${chapterId}`), {
     method: "PUT",
@@ -384,6 +405,8 @@ export interface BackendNotification {
   message: string;
   is_read: boolean;
   notif_type: string;
+  link_url?: string | null;
+  action_type?: string | null;
   created_at: string;
 }
 
@@ -451,21 +474,60 @@ export async function apiAIChat(
  *     setContent(prev => prev + delta);
  *   }
  */
+export interface AIPermissions {
+  allow_dashboard:    boolean;
+  allow_catalogue:    boolean;
+  allow_quizzes:      boolean;
+  allow_analytics:    boolean;
+  allow_certificates: boolean;
+  allow_notes:        boolean;
+  allow_documents:    boolean;
+  allow_library:      boolean;
+}
+
+export async function apiGetAIPermissions(): Promise<AIPermissions> {
+  const res = await fetch(buildApiUrl("/ai/permissions"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiUpdateAIPermissions(payload: Partial<AIPermissions>): Promise<AIPermissions> {
+  const res = await fetch(buildApiUrl("/ai/permissions"), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export interface PageContextData {
+  current_page: string;
+  page_title: string;
+  page_data: Record<string, unknown>;
+}
+
 export async function* apiAIChatStream(
   message: string,
   options?: {
-    coursId?:         number;
-    courseId?:        number;
-    chapterId?:       number;
-    history?:         { role: string; content: string }[];
-    mode?:            "document" | "assistant" | "course";
-    conversationId?:  number;
+    coursId?:          number;
+    courseId?:         number;
+    chapterId?:        number;
+    history?:          { role: string; content: string }[];
+    mode?:             "document" | "assistant" | "course";
+    conversationId?:   number;
     onConversationId?: (id: number) => void;
+    pageContext?:      PageContextData | null;
+    userContext?:      { ia_level?: string; ia_language?: string; ia_proactive_hints?: boolean } | null;
+    signal?:           AbortSignal;
+    image_base64?:     string;
+    image_type?:       string;
   },
 ): AsyncGenerator<string> {
   const res = await fetch(buildApiUrl("/ai/chat/stream"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
+    signal: options?.signal ?? null,
     body: JSON.stringify({
       message,
       cours_id:        options?.coursId         ?? null,
@@ -474,6 +536,10 @@ export async function* apiAIChatStream(
       history:         options?.history         ?? [],
       mode:            options?.mode            ?? "course",
       conversation_id: options?.conversationId  ?? null,
+      page_context:    options?.pageContext      ?? null,
+      user_context:    options?.userContext      ?? null,
+      image_base64:    options?.image_base64     ?? null,
+      image_type:      options?.image_type       ?? null,
     }),
   });
 
@@ -633,6 +699,148 @@ export async function apiDeleteConversation(conversationId: number): Promise<{ s
   return handleResponse(res);
 }
 
+// ── Quizzes ───────────────────────────────────────────────────────────────────
+
+export interface QuizQuestion {
+  question: string;
+  options: { A: string; B: string; C: string; D: string };
+  correct: string;
+  explanation: string;
+}
+
+export interface QuizGenerateResult {
+  course_id: number;
+  course_title: string;
+  questions: QuizQuestion[];
+  status: string;
+}
+
+export interface QuizResultEntry {
+  id: number;
+  score: number;
+  n_correct: number;
+  n_questions: number;
+  created_at: string;
+}
+
+export type MyQuizResults = Record<string, { best_score: number; attempts: number; results: QuizResultEntry[] }>;
+
+export async function apiGenerateCourseQuiz(courseId: number, nQuestions = 5): Promise<QuizGenerateResult> {
+  const res = await fetch(buildApiUrl(`/quizzes/generate/${courseId}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ n_questions: nQuestions }),
+  });
+  return handleResponse(res);
+}
+
+export async function apiSaveQuizResult(payload: { course_id: number; score: number; n_questions: number; n_correct: number }): Promise<QuizResultEntry> {
+  const res = await fetch(buildApiUrl("/quizzes/save-result"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetMyQuizResults(): Promise<MyQuizResults> {
+  const res = await fetch(buildApiUrl("/quizzes/my-results"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+
+export interface AdminStats {
+  total_users: number;
+  total_courses: number;
+  published_courses: number;
+  draft_courses: number;
+  total_enrollments: number;
+  total_chapters: number;
+  students: number;
+  professors: number;
+  admins: number;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  enrollment_count: number;
+}
+
+export async function apiGetAdminStats(): Promise<AdminStats> {
+  const res = await fetch(buildApiUrl("/admin/stats"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetAdminUsers(): Promise<AdminUser[]> {
+  const res = await fetch(buildApiUrl("/admin/users"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiUpdateUserRole(userId: number, role: string): Promise<AdminUser> {
+  const res = await fetch(buildApiUrl(`/admin/users/${userId}/role`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ role }),
+  });
+  return handleResponse(res);
+}
+
+export async function apiDeleteUser(userId: number): Promise<{ message: string }> {
+  const res = await fetch(buildApiUrl(`/admin/users/${userId}`), {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiAdminCreateUser(payload: { email: string; name: string; password: string; role: string }): Promise<AdminUser> {
+  const res = await fetch(buildApiUrl("/admin/users"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export interface AdminQuizStat {
+  id: number;
+  user_id: number;
+  user_name: string;
+  course_id: number;
+  course_title: string;
+  score: number;
+  n_correct: number;
+  n_questions: number;
+  time_spent_sec: number;
+  created_at: string;
+}
+
+export async function apiAdminGetAllQuizStats(): Promise<AdminQuizStat[]> {
+  const res = await fetch(buildApiUrl("/admin/quizzes/all-stats"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiAdminGenerateQuiz(courseId: number, nQuestions: number = 5): Promise<{ course_id: number; course_title: string; questions: unknown[]; status: string }> {
+  const res = await fetch(buildApiUrl(`/admin/quizzes/generate/${courseId}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ n_questions: nQuestions }),
+  });
+  return handleResponse(res);
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardStats {
@@ -641,11 +849,318 @@ export interface DashboardStats {
   unread_notifications: number;
   avg_progress: number;
   recent_documents: { id: number; titre: string }[];
+  enrollments_count?: number;
+  completed_courses?: number;
+  in_progress_courses?: number;
+  certificates_count?: number;
+  best_quiz_score?: number;
+  active_days?: number;
 }
 
 export async function apiGetDashboardStats(): Promise<DashboardStats> {
   const res = await fetch(buildApiUrl("/dashboard/stats"), {
     headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+// ── Chapter Completions ────────────────────────────────────────────────────────
+
+export interface ChapterCompletion {
+  id: number;
+  user_id: number;
+  course_id: number;
+  chapter_id: number;
+  completed_at: string;
+}
+
+export async function apiMarkChapterComplete(payload: { course_id: number; chapter_id: number }): Promise<{ status: string; message: string; certificate?: unknown }> {
+  const res = await fetch(buildApiUrl("/chapter-completions/"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetMyChapterCompletions(courseId?: number): Promise<ChapterCompletion[]> {
+  const qs = courseId ? `?course_id=${courseId}` : "";
+  const res = await fetch(buildApiUrl(`/chapter-completions/${qs}`), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+// ── Certificates ───────────────────────────────────────────────────────────────
+
+export interface Certificate {
+  id: number;
+  user_id: number;
+  course_id: number;
+  course_title: string;
+  issued_at: string;
+  certificate_url: string | null;
+  score: number | null;
+}
+
+export async function apiGetMyCertificates(): Promise<Certificate[]> {
+  const res = await fetch(buildApiUrl("/certificates/"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetCertificate(id: number): Promise<Certificate> {
+  const res = await fetch(buildApiUrl(`/certificates/${id}`), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+// ── Reviews ────────────────────────────────────────────────────────────────────
+
+export interface CourseReview {
+  id: number;
+  user_id: number;
+  course_id: number;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  user_name?: string | null;
+}
+
+export async function apiGetCourseReviews(courseId: number): Promise<CourseReview[]> {
+  const res = await fetch(buildApiUrl(`/reviews/${courseId}`), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiCreateOrUpdateReview(payload: { course_id: number; rating: number; comment?: string }): Promise<CourseReview> {
+  const res = await fetch(buildApiUrl("/reviews/"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function apiDeleteReview(courseId: number): Promise<{ message: string }> {
+  const res = await fetch(buildApiUrl(`/reviews/${courseId}`), {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+// ── Library ────────────────────────────────────────────────────────────────────
+
+export interface LibraryBook {
+  id:            number;
+  title:         string;
+  author:        string;
+  description:   string;
+  cover_image:   string;
+  category:      string;
+  page_count:    number;
+  language:      string;
+  read_url:      string;
+  download_url:  string;
+  file_url:      string;
+  file_size:     number;
+  resource_type: string;
+  tags:          string;
+  course_id:     number | null;
+  is_published:  boolean;
+  created_at:    string;
+}
+
+export async function apiGetLibraryBooks(params?: {
+  search?:   string;
+  category?: string;
+  lang?:     string;
+}): Promise<LibraryBook[]> {
+  const qs = new URLSearchParams();
+  if (params?.search)   qs.set("search",   params.search);
+  if (params?.category) qs.set("category", params.category);
+  if (params?.lang)     qs.set("lang",     params.lang);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await fetch(buildApiUrl(`/library/${query}`), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetLibraryCategories(): Promise<string[]> {
+  const res = await fetch(buildApiUrl("/library/categories"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetLibraryByCourse(courseId: number): Promise<LibraryBook[]> {
+  const res = await fetch(buildApiUrl(`/library/by-course/${courseId}`), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiGetLibraryAllAdmin(): Promise<LibraryBook[]> {
+  const res = await fetch(buildApiUrl("/library/admin/all"), {
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiCreateLibraryResource(data: Partial<LibraryBook>): Promise<LibraryBook> {
+  const res = await fetch(buildApiUrl("/library/"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+export async function apiUpdateLibraryResource(id: number, data: Partial<LibraryBook>): Promise<LibraryBook> {
+  const res = await fetch(buildApiUrl(`/library/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+export async function apiDeleteLibraryResource(id: number): Promise<void> {
+  const res = await fetch(buildApiUrl(`/library/${id}`), {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  return handleResponse(res);
+}
+
+export async function apiUploadLibraryFile(file: File): Promise<{ url: string; filename: string; size: number; type: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(buildApiUrl("/library/upload-file"), {
+    method: "POST",
+    headers: { ...authHeaders() },
+    body: form,
+  });
+  return handleResponse(res);
+}
+
+export async function apiUploadChapterImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(buildApiUrl("/library/upload-image"), {
+    method: "POST",
+    headers: { ...authHeaders() },
+    body: form,
+  });
+  const data = await handleResponse<{ url: string }>(res);
+  return data.url;
+}
+
+// ── AI Course Generation ────────────────────────────────────────────────────────
+
+export interface AICourseGenTask {
+  task_id: string;
+}
+
+export interface AICourseGenEvent {
+  type:           "extracting" | "start" | "progress" | "chapter" | "done" | "error";
+  message?:       string;
+  total_pages?:   number;
+  total_chunks?:  number;
+  chunk?:         number;
+  total?:         number;
+  pages_start?:   number;
+  pages_end?:     number;
+  index?:         number;
+  title?:         string;
+  description?:   string;
+  content?:       string;
+  duration_min?:  number;
+  order_index?:   number;
+  total_chapters?: number;
+  duration_hours?: number;
+}
+
+export interface AICourseConfirmPayload {
+  title:           string;
+  description:     string;
+  category:        string;
+  level:           string;
+  instructor_name: string;
+  cover_image:     string;
+  tags:            string;
+  duration_hours:  number;
+  is_published:    boolean;
+  chapters: {
+    title:        string;
+    description:  string;
+    content:      string;
+    duration_min: number;
+    order_index:  number;
+    video_url:    string;
+  }[];
+}
+
+export interface AICourseConfirmResult {
+  id:               number;
+  title:            string;
+  category:         string;
+  is_published:     boolean;
+  chapters_created: number;
+  supabase_id:      number | null;
+}
+
+// ── Course Quiz (AI-generated) ─────────────────────────────────────────────────
+
+export interface CourseQuizQuestion {
+  question:      string;
+  options:       string[];
+  correct_index: number;
+  explanation:   string;
+}
+
+export interface CourseQuizResponse {
+  questions: CourseQuizQuestion[];
+  course_id: number;
+}
+
+export async function apiGenerateCatalogueAIQuiz(
+  courseId:     number,
+  numQuestions: number = 5,
+): Promise<CourseQuizResponse> {
+  const res = await fetch(buildApiUrl("/ai/generate-course-quiz"), {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body:    JSON.stringify({ catalogue_course_id: courseId, num_questions: numQuestions }),
+  });
+  return handleResponse(res);
+}
+
+export async function apiAICourseGenUpload(
+  formData: FormData,
+): Promise<AICourseGenTask> {
+  const res = await fetch(buildApiUrl("/ai-course-gen/upload"), {
+    method:  "POST",
+    headers: { ...authHeaders() },
+    body:    formData,
+  });
+  return handleResponse(res);
+}
+
+export async function apiAICourseGenConfirm(
+  taskId:  string,
+  payload: AICourseConfirmPayload,
+): Promise<AICourseConfirmResult> {
+  const res = await fetch(buildApiUrl(`/ai-course-gen/confirm/${taskId}`), {
+    method:  "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body:    JSON.stringify(payload),
   });
   return handleResponse(res);
 }

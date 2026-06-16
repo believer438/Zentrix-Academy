@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { useSetPageContext } from "@/hooks/usePageContext";
 import {
   AlertTriangle,
+  Award,
+  BarChart3,
   Bell,
+  BookOpen,
   Bot,
   Check,
   ChevronRight,
   Eye,
   EyeOff,
   Globe,
+  HelpCircle,
   Info,
+  LayoutDashboard,
+  Library,
   Loader2,
   Lock,
   LogOut,
@@ -17,13 +24,18 @@ import {
   Moon,
   Settings as SettingsIcon,
   Shield,
+  StickyNote,
   Sun,
+  Upload,
   User,
 } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme, type ThemeMode } from "@/hooks/useTheme";
-import { apiGetMe, apiUpdateMe, clearAuth, isAuthenticated, type UserProfile } from "@/lib/api-client";
+import {
+  apiGetMe, apiUpdateMe, clearAuth, isAuthenticated, type UserProfile,
+  apiGetAIPermissions, apiUpdateAIPermissions, type AIPermissions,
+} from "@/lib/api-client";
 import { useNavigate } from "react-router-dom";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -176,7 +188,7 @@ const THEME_OPTIONS: { id: ThemeMode; label: string; desc: string; Icon: typeof 
 
 function ThemePicker({ theme, setTheme }: { theme: ThemeMode; setTheme: (t: ThemeMode) => void }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 @sm:grid-cols-3">
       {THEME_OPTIONS.map(({ id, label, desc, Icon }) => {
         const active = theme === id;
         return (
@@ -225,7 +237,7 @@ const LEVELS: { id: Level; label: string; desc: string; color: string }[] = [
 
 function LevelPicker({ level, setLevel }: { level: Level; setLevel: (l: Level) => void }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 @sm:grid-cols-3">
       {LEVELS.map(({ id, label, desc, color }) => {
         const active = level === id;
         const colorMap: Record<string, string> = {
@@ -367,6 +379,39 @@ export default function SettingsPage() {
     loadJSON<IAPrefs>(IA_KEY, { defaultLevel: "intermediaire", responseLanguage: "fr", proactiveHints: true })
   );
 
+  // — AI permissions (per-page context access)
+  const [aiPerms, setAiPerms] = useState<AIPermissions>({
+    allow_dashboard:    true,
+    allow_catalogue:    true,
+    allow_quizzes:      true,
+    allow_analytics:    true,
+    allow_certificates: true,
+    allow_notes:        false,
+    allow_documents:    false,
+    allow_library:      true,
+  });
+  const [loadingPerms, setLoadingPerms] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    setLoadingPerms(true);
+    apiGetAIPermissions()
+      .then(setAiPerms)
+      .catch(() => {})
+      .finally(() => setLoadingPerms(false));
+  }, []);
+
+  const updateAIPerm = async (key: keyof AIPermissions, value: boolean) => {
+    const updated = { ...aiPerms, [key]: value };
+    setAiPerms(updated);
+    try {
+      await apiUpdateAIPermissions({ [key]: value });
+    } catch {
+      setAiPerms(aiPerms);
+      toast({ title: "Erreur", description: "Impossible de sauvegarder la permission IA.", variant: "destructive" });
+    }
+  };
+
   // — Delete modal
   const [showDelete, setShowDelete] = useState(false);
 
@@ -385,6 +430,31 @@ export default function SettingsPage() {
     professor: "Professeur",
     student: "Étudiant",
   };
+
+  const tabLabels: Record<string, string> = {
+    profil: "Profil",
+    securite: "Sécurité",
+    notifications: "Notifications",
+    apparence: "Apparence",
+    ia: "Paramètres IA",
+    permissions: "Permissions IA",
+  };
+
+  useSetPageContext({
+    current_page: "settings",
+    page_title: `Paramètres — ${tabLabels[activeTab] ?? activeTab}`,
+    page_data: {
+      active_tab: activeTab,
+      user_name: user?.full_name ?? null,
+      user_email: user?.email ?? null,
+      user_role: user ? (roleLabels[user.role] ?? user.role) : null,
+      language,
+      ia_default_level: iaPrefs.defaultLevel,
+      ia_response_language: iaPrefs.responseLanguage,
+      ia_proactive_hints: iaPrefs.proactiveHints,
+      theme: resolvedTheme,
+    },
+  });
 
   // — Save profile
   const saveProfile = async () => {
@@ -550,7 +620,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2">
                       <Field label="Nom complet">
                         <Input
                           value={fullName}
@@ -649,7 +719,7 @@ export default function SettingsPage() {
                 <Card>
                   <CardHeader icon={Shield} title="Sécurité du compte" description="Modifiez votre mot de passe pour protéger votre compte." />
                   <div className="p-6 space-y-5">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2">
                       <Field label="Nouveau mot de passe">
                         <div className="relative">
                           <Input
@@ -810,6 +880,7 @@ export default function SettingsPage() {
 
             {/* ═══════════ IA ═══════════ */}
             {activeTab === "ia" && (
+              <>
               <Card>
                 <CardHeader icon={Bot} title="Préférences IA" description="Personnalisez le comportement de votre assistant Zentrix." />
                 <div className="p-6 space-y-6">
@@ -853,6 +924,94 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </Card>
+
+              {/* ── Contrôle contextuel ──────────────────────────────────────── */}
+              <Card>
+                <CardHeader
+                  icon={Eye}
+                  title="Contrôle contextuel de l'IA"
+                  description="Choisissez quelles pages l'IA peut observer pour personnaliser ses réponses."
+                />
+                <div className="p-6 space-y-1">
+                  {loadingPerms ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Chargement…
+                    </div>
+                  ) : (
+                    <>
+                      <ToggleRow
+                        icon={<LayoutDashboard className="h-4 w-4" />}
+                        title="Tableau de bord"
+                        description="Cours inscrits, progression globale, jours actifs."
+                        checked={aiPerms.allow_dashboard}
+                        onChange={(v) => updateAIPerm("allow_dashboard", v)}
+                      />
+                      <ToggleRow
+                        icon={<BookOpen className="h-4 w-4" />}
+                        title="Contenu de cours"
+                        description="Chapitre en cours, progression et texte visible."
+                        checked={aiPerms.allow_catalogue}
+                        onChange={(v) => updateAIPerm("allow_catalogue", v)}
+                      />
+                      <ToggleRow
+                        icon={<HelpCircle className="h-4 w-4" />}
+                        title="Quiz & Examens"
+                        description="Scores, tentatives et quiz en cours."
+                        checked={aiPerms.allow_quizzes}
+                        onChange={(v) => updateAIPerm("allow_quizzes", v)}
+                      />
+                      <ToggleRow
+                        icon={<BarChart3 className="h-4 w-4" />}
+                        title="Statistiques & Analytiques"
+                        description="Niveau, sujets difficiles, heures d'étude."
+                        checked={aiPerms.allow_analytics}
+                        onChange={(v) => updateAIPerm("allow_analytics", v)}
+                      />
+                      <ToggleRow
+                        icon={<Award className="h-4 w-4" />}
+                        title="Certificats"
+                        description="Nombre et liste de certificats obtenus."
+                        checked={aiPerms.allow_certificates}
+                        onChange={(v) => updateAIPerm("allow_certificates", v)}
+                      />
+                      <ToggleRow
+                        icon={<Library className="h-4 w-4" />}
+                        title="Bibliothèque de ressources"
+                        description="Ressources consultées dans la bibliothèque."
+                        checked={aiPerms.allow_library}
+                        onChange={(v) => updateAIPerm("allow_library", v)}
+                      />
+
+                      {/* ── Zone sensible — désactivé par défaut ── */}
+                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                        <p className="mb-3 flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Données personnelles — désactivé par défaut
+                        </p>
+                        <ToggleRow
+                          icon={<StickyNote className="h-4 w-4" />}
+                          title="Mes Notes"
+                          description="L'IA peut lire vos notes personnelles pour contextualiser ses réponses."
+                          checked={aiPerms.allow_notes}
+                          onChange={(v) => updateAIPerm("allow_notes", v)}
+                        />
+                        <ToggleRow
+                          icon={<Upload className="h-4 w-4" />}
+                          title="Documents uploadés"
+                          description="L'IA connaît vos documents PDF personnels en dehors du mode Document IA."
+                          checked={aiPerms.allow_documents}
+                          onChange={(v) => updateAIPerm("allow_documents", v)}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <p className="pt-3 text-xs text-slate-400 dark:text-slate-500 flex items-start gap-1.5">
+                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    Les modifications sont enregistrées automatiquement. Désactiver une page empêche l'IA d'accéder à son contexte, sans affecter votre historique de conversation.
+                  </p>
+                </div>
+              </Card>
+              </>
             )}
 
           </main>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSetPageContext } from "@/hooks/usePageContext";
 import {
   Award,
   BarChart3,
@@ -50,6 +51,18 @@ export default function AnalyticsPage() {
   const level          = (profile?.profile as Record<string, string> | undefined)?.level ?? "debutant";
   const questionCount  = (profile?.profile as Record<string, number> | undefined)?.question_count ?? 0;
 
+  useSetPageContext({
+    current_page: "analytics",
+    page_title:   "Mes statistiques",
+    page_data: {
+      active_days:              activeDays,
+      total_questions_asked:    questionCount,
+      estimated_study_hours:    Number(timeHours),
+      top_weaknesses:           weaknesses.slice(0, 3).map(w => w.topic ?? w),
+      level,
+    },
+  });
+
   const stats = useMemo(
     () => [
       {
@@ -97,7 +110,7 @@ export default function AnalyticsPage() {
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
 
         {/* ── Stats cards ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 @lg:grid-cols-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -114,7 +127,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* ── Faiblesses IA + Heatmap ───────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
 
           {/* Faiblesses détectées */}
           <section className="border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
@@ -230,7 +243,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* ── Indicateurs du bas ───────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <section className="grid grid-cols-1 gap-3 @md:grid-cols-3">
           {[
             { icon: Award,  label: "Niveau détecté",      value: loading ? "…" : level.charAt(0).toUpperCase() + level.slice(1), hint: "Basé sur la progression globale" },
             { icon: Target, label: "Questions à l'IA",    value: loading ? "…" : String(questionCount),            hint: "Depuis le début" },

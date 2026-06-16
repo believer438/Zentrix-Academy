@@ -16,7 +16,7 @@ function applyTheme(mode: ThemeMode): void {
 export function useTheme() {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") return "system";
-    return (localStorage.getItem(STORAGE_KEY) as ThemeMode) || "system";
+    return (localStorage.getItem(STORAGE_KEY) as ThemeMode) || "light";
   });
 
   const setTheme = useCallback((mode: ThemeMode) => {

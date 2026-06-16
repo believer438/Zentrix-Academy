@@ -132,7 +132,7 @@ export default function SiteFooter() {
 
           <div className="mt-10 border-t border-white/10 pt-6">
             <div className="flex flex-col gap-3 text-[13px] text-[#617098] sm:flex-row sm:items-center sm:justify-between">
-              <p>© 2026 Zentrix Technology Institute. All Rights Reserved.</p>
+              <p>© {new Date().getFullYear()} Zentrix Technology Institute. All Rights Reserved.</p>
               <div className="flex items-center gap-8">
                 <button className="transition-colors hover:text-[#FF6B00]">Privacy Policy</button>
                 <button className="transition-colors hover:text-[#FF6B00]">Terms of Service</button>

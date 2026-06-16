@@ -368,7 +368,9 @@ export interface LessonSegment {
   id: string;
   heading: string;
   paragraphs: string[];
+  content?: string;
   videoUrl: string;
+  videoPosition: string;
   videoTitle: string;
   videoDescription: string;
   videoDuration: string;
@@ -381,6 +383,7 @@ export function buildLessonSegments(course: Course): LessonSegment[] {
     heading: seed.heading,
     paragraphs: seed.paragraphs,
     videoUrl: SAMPLE_VIDEOS[index % SAMPLE_VIDEOS.length],
+    videoPosition: "bottom",
     videoTitle: seed.videoTitle,
     videoDescription: seed.videoDescription,
     videoDuration: seed.videoDuration,
